@@ -1,4 +1,4 @@
-FROM node:14-alpine
+FROM node:12-alpine AS WORKER_BUILD_IMAGE
 
 LABEL com.centurylinklabs.watchtower.lifecycle.pre-check="scripts/watchtower-hooks/pre-check.sh"
 LABEL com.centurylinklabs.watchtower.lifecycle.pre-update="scripts/watchtower-hooks/pre-update.sh"
@@ -9,10 +9,25 @@ WORKDIR /app
 
 # copy files and install dependencies
 COPY . ./
+
 # handle node-gyp
 RUN apk add --no-cache --virtual .gyp python3 make g++ \
     && yarn && apk del .gyp
 RUN yarn global add pm2
+RUN yarn build
+RUN npm prune --production
+
+# Final build stage image
+FROM node:12-alpine
+
+WORKDIR /app
+
+# copy from build image
+COPY --from=WORKER_BUILD_IMAGE /app/dist ./dist
+COPY --from=WORKER_BUILD_IMAGE /app/node_modules ./node_modules
+COPY package.json ./
+COPY docker_run.sh ./
+COPY pm2.config.js ./
 
 EXPOSE 4001
 
