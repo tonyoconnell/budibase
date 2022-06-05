@@ -1,4 +1,4 @@
-FROM node:12-alpine AS WORKER_BUILD_IMAGE
+FROM node:14-alpine AS WORKER_BUILD_IMAGE
 
 LABEL com.centurylinklabs.watchtower.lifecycle.pre-check="scripts/watchtower-hooks/pre-check.sh"
 LABEL com.centurylinklabs.watchtower.lifecycle.pre-update="scripts/watchtower-hooks/pre-update.sh"
@@ -18,7 +18,7 @@ RUN yarn build
 RUN npm prune --production
 
 # Final build stage image
-FROM node:12-alpine
+FROM node:14-alpine
 
 WORKDIR /app
 
