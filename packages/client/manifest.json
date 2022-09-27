@@ -4400,6 +4400,7 @@
     "name": "Grid",
     "icon": "ViewGrid",
     "hasChildren": true,
+    "draggable": false,
     "styles": [
       "size"
     ]

@@ -64,6 +64,25 @@
         parent: parent.dataset.parent,
         mode: "move",
       }
+
+      const component = $componentStore.selectedComponent
+      const domComponent = document.getElementsByClassName(component._id)
+      const grid = domComponent.closest(".grid")
+      if (grid) {
+        const getStyle = x => parseInt(component._styles.normal?.[x] || "0")
+        dragInfo.grid = {
+          startX: e.clientX,
+          startY: e.clientY,
+          rowStart: getStyle("grid-row-start"),
+          rowEnd: getStyle("grid-row-end"),
+          colStart: getStyle("grid-column-start"),
+          colEnd: getStyle("grid-column-end"),
+          rowDeltaMin: 1 - getStyle("grid-row-start"),
+          rowDeltaMax: 13 - getStyle("grid-row-end"),
+          colDeltaMin: 1 - getStyle("grid-column-start"),
+          colDeltaMax: 13 - getStyle("grid-column-end"),
+        }
+      }
     }
 
     if (!dragInfo) {
@@ -111,21 +130,98 @@
     e.preventDefault()
 
     // Set drag info for grids if not set
-    if (!dragInfo.grid) {
+
+    if (dragInfo.grid) {
       const coord = e.target.closest(".grid-coord")
-      if (coord) {
-        const row = parseInt(coord.dataset.row)
-        const col = parseInt(coord.dataset.col)
-        const component = $componentStore.selectedComponent
-        const getStyle = x => parseInt(component._styles.normal?.[x] || "0")
-        dragInfo.grid = {
-          startRow: row,
-          startCol: col,
-          rowDeltaMin: 1 - getStyle("grid-row-start"),
-          rowDeltaMax: 13 - getStyle("grid-row-end"),
-          colDeltaMin: 1 - getStyle("grid-column-start"),
-          colDeltaMax: 13 - getStyle("grid-column-end"),
+      if (!coord) {
+        return
+      }
+
+      const { mode, side, grid } = dragInfo
+      const {
+        startX,
+        startY,
+        rowStart,
+        rowEnd,
+        colStart,
+        colEnd,
+        rowDeltaMin,
+        rowDeltaMax,
+        colDeltaMin,
+        colDeltaMax,
+      } = grid
+
+      const g = e.target.closest(".grid")
+      const cols = parseInt(g.dataset.cols)
+      const { width, height } = g.getBoundingClientRect()
+
+      const colWidth = width / cols
+      const diffX = e.clientX - startX
+      let deltaX = diffX / colWidth
+      console.log(deltaX)
+      if (Math.abs(deltaX) <= 0.4) {
+        deltaX = 0
+      } else if (deltaX >= 0) {
+        deltaX = Math.ceil(deltaX)
+      } else {
+        deltaX = Math.floor(deltaX)
+      }
+
+      const rowHeight = height / cols
+      const diffY = e.clientY - startY
+      let deltaY = diffY / rowHeight
+      if (Math.abs(deltaY) <= 0.4) {
+        deltaY = 0
+      } else if (deltaY >= 0) {
+        deltaY = Math.ceil(deltaY)
+      } else {
+        deltaY = Math.floor(deltaY)
+      }
+
+      if (mode === "move") {
+        deltaY = Math.min(Math.max(deltaY, rowDeltaMin), rowDeltaMax)
+        deltaX = Math.min(Math.max(deltaX, colDeltaMin), colDeltaMax)
+        builderStore.actions.setGridStyles({
+          "grid-row-start": rowStart + deltaY,
+          "grid-row-end": rowEnd + deltaY,
+          "grid-column-start": colStart + deltaX,
+          "grid-column-end": colEnd + deltaX,
+        })
+      } else if (mode === "resize") {
+        console.log(colEnd, deltaX, colStart)
+
+        let newStyles = {}
+        if (side === "right") {
+          newStyles["grid-column-end"] = Math.max(colEnd + deltaX, colStart + 1)
+        } else if (side === "left") {
+          newStyles["grid-column-start"] = Math.min(
+            colStart + deltaX,
+            colEnd - 1
+          )
+        } else if (side === "top") {
+          newStyles["grid-row-start"] = Math.min(rowStart + deltaY, rowEnd - 1)
+        } else if (side === "bottom") {
+          newStyles["grid-row-end"] = Math.max(rowEnd + deltaY, rowStart + 1)
+        } else if (side === "bottom-right") {
+          newStyles["grid-column-end"] = Math.max(colEnd + deltaX, colStart + 1)
+          newStyles["grid-row-end"] = Math.max(rowEnd + deltaY, rowStart + 1)
+        } else if (side === "bottom-left") {
+          newStyles["grid-column-start"] = Math.min(
+            colStart + deltaX,
+            colEnd - 1
+          )
+          newStyles["grid-row-end"] = Math.max(rowEnd + deltaY, rowStart + 1)
+        } else if (side === "top-right") {
+          newStyles["grid-column-end"] = Math.max(colEnd + deltaX, colStart + 1)
+          newStyles["grid-row-start"] = Math.min(rowStart + deltaY, rowEnd - 1)
+        } else if (side === "top-left") {
+          newStyles["grid-column-start"] = Math.min(
+            colStart + deltaX,
+            colEnd - 1
+          )
+          newStyles["grid-row-start"] = Math.min(rowStart + deltaY, rowEnd - 1)
         }
+        builderStore.actions.setGridStyles(newStyles)
       }
     }
 
@@ -193,71 +289,6 @@
     // Skip if we aren't validly dragging currently
     if (!dragInfo || !e.target.closest) {
       return
-    }
-
-    const coord = e.target.closest(".grid-coord")
-    if (coord && dragInfo.grid) {
-      const row = parseInt(coord.dataset.row)
-      const col = parseInt(coord.dataset.col)
-      const { mode, side, grid } = dragInfo
-      const {
-        startRow,
-        startCol,
-        rowDeltaMin,
-        rowDeltaMax,
-        colDeltaMin,
-        colDeltaMax,
-      } = grid
-
-      const component = $componentStore.selectedComponent
-      const rowStart = parseInt(
-        component._styles.normal?.["grid-row-start"] || 0
-      )
-      const rowEnd = parseInt(component._styles.normal?.["grid-row-end"] || 0)
-      const colStart = parseInt(
-        component._styles.normal?.["grid-column-start"] || 0
-      )
-      const colEnd = parseInt(
-        component._styles.normal?.["grid-column-end"] || 0
-      )
-
-      let rowDelta = row - startRow
-      let colDelta = col - startCol
-
-      if (mode === "move") {
-        rowDelta = Math.min(Math.max(rowDelta, rowDeltaMin), rowDeltaMax)
-        colDelta = Math.min(Math.max(colDelta, colDeltaMin), colDeltaMax)
-        builderStore.actions.setGridStyles({
-          "grid-row-start": rowStart + rowDelta,
-          "grid-row-end": rowEnd + rowDelta,
-          "grid-column-start": colStart + colDelta,
-          "grid-column-end": colEnd + colDelta,
-        })
-      } else if (mode === "resize") {
-        let newStyles = {}
-        if (side === "right") {
-          newStyles["grid-column-end"] = colEnd + colDelta
-        } else if (side === "left") {
-          newStyles["grid-column-start"] = colStart + colDelta
-        } else if (side === "top") {
-          newStyles["grid-row-start"] = rowStart + rowDelta
-        } else if (side === "bottom") {
-          newStyles["grid-row-end"] = rowEnd + rowDelta
-        } else if (side === "bottom-right") {
-          newStyles["grid-column-end"] = colEnd + colDelta
-          newStyles["grid-row-end"] = rowEnd + rowDelta
-        } else if (side === "bottom-left") {
-          newStyles["grid-column-start"] = colStart + colDelta
-          newStyles["grid-row-end"] = rowEnd + rowDelta
-        } else if (side === "top-right") {
-          newStyles["grid-column-end"] = colEnd + colDelta
-          newStyles["grid-row-start"] = rowStart + rowDelta
-        } else if (side === "top-left") {
-          newStyles["grid-column-start"] = colStart + colDelta
-          newStyles["grid-row-start"] = rowStart + rowDelta
-        }
-        builderStore.actions.setGridStyles(newStyles)
-      }
     }
     return
 

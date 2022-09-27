@@ -5,7 +5,8 @@
   const component = getContext("component")
   const { styleable, builderStore } = getContext("sdk")
 
-  $: coords = generateCoords(12)
+  const cols = 12
+  $: coords = generateCoords(cols)
 
   const generateCoords = num => {
     let grid = []
@@ -18,7 +19,7 @@
   }
 </script>
 
-<div class="grid" use:styleable={$component.styles}>
+<div class="grid" use:styleable={$component.styles} data-cols={cols}>
   <div class="underlay">
     {#each coords as coord}
       <div class="placeholder" />
