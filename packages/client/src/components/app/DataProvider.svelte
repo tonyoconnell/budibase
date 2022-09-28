@@ -150,7 +150,7 @@
 
 <style>
   .container {
-    display: flex;
+    display: contents;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;

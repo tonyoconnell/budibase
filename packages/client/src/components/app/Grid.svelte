@@ -5,7 +5,7 @@
   const component = getContext("component")
   const { styleable, builderStore } = getContext("sdk")
 
-  const cols = 12
+  const cols = 32
   $: coords = generateCoords(cols)
 
   const generateCoords = num => {
@@ -52,8 +52,8 @@
   .underlay,
   .overlay {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-template-rows: repeat(12, 1fr);
+    grid-template-columns: repeat(32, 1fr);
+    grid-template-rows: repeat(32, 1fr);
   }
   .underlay,
   .overlay {

@@ -403,3 +403,9 @@
     <slot />
   </div>
 </Provider>
+
+<style>
+  div {
+    display: contents;
+  }
+</style>

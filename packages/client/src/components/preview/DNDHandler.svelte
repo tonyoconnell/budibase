@@ -64,25 +64,6 @@
         parent: parent.dataset.parent,
         mode: "move",
       }
-
-      const component = $componentStore.selectedComponent
-      const domComponent = document.getElementsByClassName(component._id)
-      const grid = domComponent.closest(".grid")
-      if (grid) {
-        const getStyle = x => parseInt(component._styles.normal?.[x] || "0")
-        dragInfo.grid = {
-          startX: e.clientX,
-          startY: e.clientY,
-          rowStart: getStyle("grid-row-start"),
-          rowEnd: getStyle("grid-row-end"),
-          colStart: getStyle("grid-column-start"),
-          colEnd: getStyle("grid-column-end"),
-          rowDeltaMin: 1 - getStyle("grid-row-start"),
-          rowDeltaMax: 13 - getStyle("grid-row-end"),
-          colDeltaMin: 1 - getStyle("grid-column-start"),
-          colDeltaMax: 13 - getStyle("grid-column-end"),
-        }
-      }
     }
 
     if (!dragInfo) {
@@ -90,7 +71,27 @@
     }
 
     builderStore.actions.selectComponent(dragInfo.target)
-    builderStore.actions.setDragging(true)
+
+    const component = $componentStore.selectedComponent
+    const domComponent = document.getElementsByClassName(component?._id)[0]
+    const grid = domComponent?.closest(".grid")
+    if (grid) {
+      const getStyle = x => parseInt(component._styles.normal?.[x] || "0")
+      dragInfo.grid = {
+        startX: e.clientX,
+        startY: e.clientY,
+        rowStart: getStyle("grid-row-start"),
+        rowEnd: getStyle("grid-row-end"),
+        colStart: getStyle("grid-column-start"),
+        colEnd: getStyle("grid-column-end"),
+        rowDeltaMin: 1 - getStyle("grid-row-start"),
+        rowDeltaMax: parseInt(grid.dataset.cols) + 1 - getStyle("grid-row-end"),
+        colDeltaMin: 1 - getStyle("grid-column-start"),
+        colDeltaMax:
+          parseInt(grid.dataset.cols) + 1 - getStyle("grid-column-end"),
+      }
+      builderStore.actions.setDragging(true)
+    }
 
     // Highlight being dragged by setting opacity
     const child = getDOMNodeForComponent(e.target)
@@ -157,26 +158,10 @@
 
       const colWidth = width / cols
       const diffX = e.clientX - startX
-      let deltaX = diffX / colWidth
-      console.log(deltaX)
-      if (Math.abs(deltaX) <= 0.4) {
-        deltaX = 0
-      } else if (deltaX >= 0) {
-        deltaX = Math.ceil(deltaX)
-      } else {
-        deltaX = Math.floor(deltaX)
-      }
-
+      let deltaX = Math.round(diffX / colWidth)
       const rowHeight = height / cols
       const diffY = e.clientY - startY
-      let deltaY = diffY / rowHeight
-      if (Math.abs(deltaY) <= 0.4) {
-        deltaY = 0
-      } else if (deltaY >= 0) {
-        deltaY = Math.ceil(deltaY)
-      } else {
-        deltaY = Math.floor(deltaY)
-      }
+      let deltaY = Math.round(diffY / rowHeight)
 
       if (mode === "move") {
         deltaY = Math.min(Math.max(deltaY, rowDeltaMin), rowDeltaMax)
@@ -188,8 +173,6 @@
           "grid-column-end": colEnd + deltaX,
         })
       } else if (mode === "resize") {
-        console.log(colEnd, deltaX, colStart)
-
         let newStyles = {}
         if (side === "right") {
           newStyles["grid-column-end"] = Math.max(colEnd + deltaX, colStart + 1)
