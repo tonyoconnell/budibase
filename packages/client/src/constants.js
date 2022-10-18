@@ -18,6 +18,7 @@ export const UnsortableTypes = [
   FieldTypes.ATTACHMENT,
   FieldTypes.ARRAY,
   FieldTypes.LINK,
+  FieldTypes.JSON,
 ]
 
 export const ActionTypes = {

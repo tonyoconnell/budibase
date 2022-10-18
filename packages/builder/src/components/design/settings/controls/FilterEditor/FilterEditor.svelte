@@ -23,7 +23,14 @@
   $: initialFilters = correctFilters(value || [])
   $: dataSource = getDatasourceForProvider($currentAsset, componentInstance)
   $: schema = getSchemaForDatasource($currentAsset, dataSource)?.schema
-  $: schemaFields = Object.values(schema || {})
+  $: isExternal = dataSource?.name?.includes("datasource_plus") === true
+  $: schemaFields = Object.values(schema || {}).reduce((acc, fieldSchema) => {
+    if (isExternal && fieldSchema.nestedJSON) {
+      return acc
+    }
+    acc.push(fieldSchema)
+    return acc
+  }, [])
 
   function addNumbering(filters) {
     let count = 1

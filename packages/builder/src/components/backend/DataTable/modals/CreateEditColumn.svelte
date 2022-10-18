@@ -270,6 +270,7 @@
         FIELDS.ARRAY,
         FIELDS.FORMULA,
         FIELDS.LINK,
+        FIELDS.JSON,
       ]
     }
   }

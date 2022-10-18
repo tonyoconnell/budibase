@@ -14,7 +14,17 @@
   const dispatch = createEventDispatcher()
   $: datasource = getDatasourceForProvider($currentAsset, componentInstance)
   $: schema = getSchemaForDatasource($currentAsset, datasource).schema
-  $: options = Object.keys(schema || {})
+  $: options = schemaFields
+  $: isExternal = datasource?.name?.includes("datasource_plus") === true
+
+  $: schemaFields = Object.values(schema || {}).reduce((acc, fieldSchema) => {
+    if (isExternal && (fieldSchema.nestedJSON || fieldSchema.type === "json")) {
+      return acc
+    }
+    acc.push(fieldSchema.name)
+    return acc
+  }, [])
+
   $: boundValue = getValidValue(value, options)
 
   const getValidValue = (value, options) => {

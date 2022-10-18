@@ -62,6 +62,7 @@ function generateSchema(
         })
         break
       case FieldTypes.ARRAY:
+      case FieldTypes.JSON:
         schema.json(key)
         break
       case FieldTypes.LINK:

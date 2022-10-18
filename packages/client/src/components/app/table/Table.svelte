@@ -34,13 +34,15 @@
   $: data = dataProvider?.rows || []
   $: fullSchema = dataProvider?.schema ?? {}
   $: fields = getFields(fullSchema, columns, showAutoColumns)
+  $: isExternal = !loading
+    ? dataProvider?.datasource?.name?.includes("datasource_plus")
+    : false
   $: schema = getFilteredSchema(fullSchema, fields, hasChildren)
   $: setSorting = getAction(
     dataProvider?.id,
     ActionTypes.SetDataProviderSorting
   )
   $: table = dataProvider?.datasource?.type === "table"
-
   $: {
     rowSelectionStore.actions.updateSelection(
       $component.id,
@@ -96,7 +98,11 @@
         return
       }
       newSchema[columnName] = schema[columnName]
-      if (UnsortableTypes.includes(schema[columnName].type)) {
+      if (
+        UnsortableTypes.includes(schema[columnName].type) ||
+        schema[columnName].type === "jsonarray" ||
+        (isExternal && schema[columnName].nestedJSON)
+      ) {
         newSchema[columnName].sortable = false
       }
 
