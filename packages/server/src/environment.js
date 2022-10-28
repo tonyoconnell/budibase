@@ -83,6 +83,8 @@ module.exports = {
   MULTI_TENANCY: process.env.MULTI_TENANCY,
   ENABLE_ANALYTICS: process.env.ENABLE_ANALYTICS,
   SELF_HOSTED: process.env.SELF_HOSTED,
+  DISABLE_JOB_PROCESSING: process.env.DISABLE_JOB_PROCESSING,
+  DISABLE_HTTP_API: process.env.DISABLE_HTTP_API,
   // old
   CLIENT_ID: process.env.CLIENT_ID,
   _set(key, value) {

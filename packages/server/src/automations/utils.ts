@@ -1,7 +1,6 @@
 import { Thread, ThreadType } from "../threads"
 import { definitions } from "./triggerInfo"
 import * as webhooks from "../api/controllers/webhook"
-import { automationQueue } from "./bullboard"
 import newid from "../db/newid"
 import { updateEntityMetadata } from "../utilities"
 import { MetadataTypes, WebhookType } from "../constants"
@@ -13,7 +12,7 @@ import {
   getAppId,
   getProdAppDB,
 } from "@budibase/backend-core/context"
-import { context } from "@budibase/backend-core"
+import { context, queues } from "@budibase/backend-core"
 import { quotas } from "@budibase/pro"
 import { Automation } from "@budibase/types"
 
@@ -79,12 +78,12 @@ export function removeDeprecated(definitions: any) {
 // end the repetition and the job itself
 export async function disableAllCrons(appId: any) {
   const promises = []
-  const jobs = await automationQueue.getRepeatableJobs()
+  const jobs = await queues.getAutomationQueue().getRepeatableJobs()
   for (let job of jobs) {
     if (job.key.includes(`${appId}_cron`)) {
-      promises.push(automationQueue.removeRepeatableByKey(job.key))
+      promises.push(queues.getAutomationQueue().removeRepeatableByKey(job.key))
       if (job.id) {
-        promises.push(automationQueue.removeJobs(job.id))
+        promises.push(queues.getAutomationQueue().removeJobs(job.id))
       }
     }
   }
@@ -92,10 +91,10 @@ export async function disableAllCrons(appId: any) {
 }
 
 export async function disableCronById(jobId: number | string) {
-  const repeatJobs = await automationQueue.getRepeatableJobs()
+  const repeatJobs = await queues.getAutomationQueue().getRepeatableJobs()
   for (let repeatJob of repeatJobs) {
     if (repeatJob.id === jobId) {
-      await automationQueue.removeRepeatableByKey(repeatJob.key)
+      await queues.getAutomationQueue().removeRepeatableByKey(repeatJob.key)
     }
   }
   console.log(`jobId=${jobId} disabled`)
@@ -145,7 +144,7 @@ export async function enableCronTrigger(appId: any, automation: Automation) {
   ) {
     // make a job id rather than letting Bull decide, makes it easier to handle on way out
     const jobId = `${appId}_cron_${newid()}`
-    const job: any = await automationQueue.add(
+    const job: any = await queues.getAutomationQueue().add(
       {
         automation,
         event: { appId, timestamp: Date.now() },

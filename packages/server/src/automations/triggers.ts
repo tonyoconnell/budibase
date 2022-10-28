@@ -4,14 +4,15 @@ const { coerce } = require("../utilities/rowProcessor")
 const { definitions } = require("./triggerInfo")
 const { isDevAppID } = require("../db/utils")
 // need this to call directly, so we can get a response
-const { automationQueue } = require("./bullboard")
 const { checkTestFlag } = require("../utilities/redis")
 const utils = require("./utils")
 const env = require("../environment")
 const { doInAppContext, getAppDB } = require("@budibase/backend-core/context")
 const { getAllApps } = require("@budibase/backend-core/db")
+import { queues } from "@budibase/backend-core"
 
-const TRIGGER_DEFINITIONS = definitions
+export const TRIGGER_DEFINITIONS = definitions
+
 const JOB_OPTS = {
   removeOnComplete: true,
   removeOnFail: true,
@@ -22,10 +23,10 @@ async function getAllAutomations() {
   let automations = await db.allDocs(
     getAutomationParams(null, { include_docs: true })
   )
-  return automations.rows.map(row => row.doc)
+  return automations.rows.map((row: any) => row.doc)
 }
 
-async function queueRelevantRowAutomations(event, eventType) {
+async function queueRelevantRowAutomations(event: any, eventType: any) {
   if (event.appId == null) {
     throw `No appId specified for ${eventType} - check event emitters.`
   }
@@ -34,7 +35,7 @@ async function queueRelevantRowAutomations(event, eventType) {
     let automations = await getAllAutomations()
 
     // filter down to the correct event type
-    automations = automations.filter(automation => {
+    automations = automations.filter((automation: any) => {
       const trigger = automation.definition.trigger
       return trigger && trigger.event === eventType
     })
@@ -56,13 +57,13 @@ async function queueRelevantRowAutomations(event, eventType) {
         automationTrigger.inputs &&
         automationTrigger.inputs.tableId === event.row.tableId
       ) {
-        await automationQueue.add({ automation, event }, JOB_OPTS)
+        await queues.getAutomationQueue().add({ automation, event }, JOB_OPTS)
       }
     }
   })
 }
 
-emitter.on("row:save", async function (event) {
+emitter.on("row:save", async function (event: any) {
   /* istanbul ignore next */
   if (!event || !event.row || !event.row.tableId) {
     return
@@ -70,7 +71,7 @@ emitter.on("row:save", async function (event) {
   await queueRelevantRowAutomations(event, "row:save")
 })
 
-emitter.on("row:update", async function (event) {
+emitter.on("row:update", async function (event: any) {
   /* istanbul ignore next */
   if (!event || !event.row || !event.row.tableId) {
     return
@@ -78,7 +79,7 @@ emitter.on("row:update", async function (event) {
   await queueRelevantRowAutomations(event, "row:update")
 })
 
-emitter.on("row:delete", async function (event) {
+emitter.on("row:delete", async function (event: any) {
   /* istanbul ignore next */
   if (!event || !event.row || !event.row.tableId) {
     return
@@ -86,10 +87,10 @@ emitter.on("row:delete", async function (event) {
   await queueRelevantRowAutomations(event, "row:delete")
 })
 
-exports.externalTrigger = async function (
-  automation,
-  params,
-  { getResponses } = {}
+export const externalTrigger = async function (
+  automation: any,
+  params: any,
+  { getResponses }: any = {}
 ) {
   if (
     automation.definition != null &&
@@ -99,7 +100,7 @@ exports.externalTrigger = async function (
     !(await checkTestFlag(automation._id))
   ) {
     // values are likely to be submitted as strings, so we shall convert to correct type
-    const coercedFields = {}
+    const coercedFields: any = {}
     const fields = automation.definition.trigger.inputs.fields
     for (let key of Object.keys(fields || {})) {
       coercedFields[key] = coerce(params.fields[key], fields[key])
@@ -110,11 +111,11 @@ exports.externalTrigger = async function (
   if (getResponses) {
     return utils.processEvent({ data })
   } else {
-    return automationQueue.add(data, JOB_OPTS)
+    return queues.getAutomationQueue().add(data, JOB_OPTS)
   }
 }
 
-exports.rebootTrigger = async () => {
+export const rebootTrigger = async () => {
   // reboot cron option is only available on the main thread at
   // startup and only usable in self host and single tenant environments
   if (env.isInThread() || !env.SELF_HOSTED || env.MULTI_TENANCY) {
@@ -136,12 +137,10 @@ exports.rebootTrigger = async () => {
               timestamp: Date.now(),
             },
           }
-          rebootEvents.push(automationQueue.add(job, JOB_OPTS))
+          rebootEvents.push(queues.getAutomationQueue().add(job, JOB_OPTS))
         }
       }
       await Promise.all(rebootEvents)
     })
   }
 }
-
-exports.TRIGGER_DEFINITIONS = TRIGGER_DEFINITIONS
