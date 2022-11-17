@@ -1,74 +1,64 @@
-import errors from "./errors"
-const errorClasses = errors.errors
-import * as events from "./events"
-import * as migrations from "./migrations"
-import * as users from "./users"
-import * as roles from "./security/roles"
-import * as permissions from "./security/permissions"
-import * as accounts from "./cloud/accounts"
-import * as installation from "./installation"
-import env from "./environment"
-import tenancy from "./tenancy"
-import featureFlags from "./featureFlags"
-import * as sessions from "./security/sessions"
-import * as deprovisioning from "./context/deprovision"
-import auth from "./auth"
-import * as constants from "./constants"
-import * as dbConstants from "./db/constants"
-import * as logging from "./logging"
-import pino from "./pino"
-import * as middleware from "./middleware"
-import plugins from "./plugin"
-import encryption from "./security/encryption"
-import * as queue from "./queue"
-import * as types from "./types"
-
-// mimic the outer package exports
 import * as db from "./db"
-import * as objectStore from "./pkg/objectStore"
-import * as utils from "./pkg/utils"
-import redis from "./pkg/redis"
-import cache from "./pkg/cache"
-import context from "./pkg/context"
-
-const init = (opts: any = {}) => {
+export const init = (opts: any = {}) => {
   db.init(opts.db)
 }
+export * as db from "./db"
+export { PouchLike } from "./db"
+export * from "./db/constants"
+export * from "./constants"
+export * as constants from "./constants"
+export * as events from "./events"
+export * as sessions from "./security/sessions"
+export * as deprovisioning from "./context/deprovision"
+export * as installation from "./installation"
+export * as objectStore from "./pkg/objectStore"
+export * as utils from "./pkg/utils"
+export * as users from "./users"
+export * as migrations from "./migrations"
+export * as accounts from "./cloud/accounts"
+export * as logging from "./logging"
+export * as roles from "./security/roles"
+export * as queue from "./queue"
 
-const core = {
-  init,
-  db,
-  ...dbConstants,
-  redis,
-  locks: redis.redlock,
-  objectStore,
-  utils,
-  users,
-  cache,
-  auth,
-  constants,
-  ...constants,
-  migrations,
-  env,
-  accounts,
-  tenancy,
-  context,
-  featureFlags,
-  events,
-  sessions,
-  deprovisioning,
-  installation,
-  errors,
-  logging,
-  roles,
-  plugins,
-  ...pino,
-  ...errorClasses,
-  middleware,
-  encryption,
-  queue,
-  permissions,
-  ...types,
-}
+import _permissions from "./security/permissions"
+export const permissions = _permissions
 
-export = core
+// RE-EXPORTS
+
+import _redis from "./pkg/redis"
+export const redis = _redis
+export const locks = _redis.redlock
+
+import _cache from "./pkg/cache"
+export const cache = _cache
+
+import _auth from "./auth"
+export const auth = _auth
+
+import _env from "./environment"
+export const env = _env
+
+import _tenancy from "./tenancy"
+export const tenancy = _tenancy
+
+import _context from "./pkg/context"
+export const context = _context
+
+import _featureFlags from "./featureFlags"
+export const featureFlags = _featureFlags
+
+import _errors from "./errors"
+export const errors = _errors
+export { UsageLimitError, FeatureDisabledError } from "./errors/licensing"
+export { HTTPError } from "./errors/http"
+
+import _plugins from "./plugin"
+export const plugins = _plugins
+
+export { pinoSettings } from "./pino"
+
+import _middleware from "./middleware"
+export const middleware = _middleware
+
+import _encryption from "./security/encryption"
+export const encryption = _encryption
