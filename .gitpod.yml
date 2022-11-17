@@ -3,6 +3,7 @@ tasks:
       yarn
       yarn bootstrap
       yarn build
+      yarn dev:stack:up
     command: |
       yarn dev:gitpod
 ports:
