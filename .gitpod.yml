@@ -1,0 +1,10 @@
+tasks:
+  - init: | 
+      yarn
+      yarn bootstrap
+      yarn build
+    command: |
+      yarn dev:gitpod
+ports:
+  - port: 10000
+    onOpen: open-preview
