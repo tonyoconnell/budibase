@@ -1,6 +1,6 @@
 import { newid } from "./utils"
 import * as events from "./events"
-import { StaticDatabases } from "./db"
+import { getDB, StaticDatabases } from "./db"
 import { doWithDB } from "./db"
 import { Installation, IdentityType } from "@budibase/types"
 import * as context from "./context"
@@ -10,34 +10,57 @@ import { bustCache, withCache, TTL, CacheKey } from "./cache/generic"
 const pkg = require("../package.json")
 
 export const getInstall = async (): Promise<Installation> => {
-  return withCache(CacheKey.INSTALLATION, TTL.ONE_DAY, getInstallFromDB, {
+  return withCache(CacheKey.INSTALLATION, TTL.ONE_DAY, getOrCreateInstall, {
     useTenancy: false,
   })
 }
 
-const getInstallFromDB = async (): Promise<Installation> => {
+export async function removeInstall() {
+  const install = await getInstallFromDB()
+  if (install) {
+    const db = getDB(StaticDatabases.PLATFORM_INFO.name)
+    await db.remove(install._id, install._rev)
+  }
+}
+
+export async function getInstallFromDB(): Promise<Installation | undefined> {
+  try {
+    const db = getDB(StaticDatabases.PLATFORM_INFO.name)
+    // await for error checking
+    const install = await db.get(StaticDatabases.PLATFORM_INFO.docs.install)
+    return install
+  } catch (e: any) {
+    if (e.status === 404) {
+      return
+    }
+    throw e
+  }
+}
+
+const getOrCreateInstall = async (): Promise<Installation> => {
   return doWithDB(
     StaticDatabases.PLATFORM_INFO.name,
     async (platformDb: any) => {
-      let install: Installation
-      try {
-        install = await platformDb.get(
-          StaticDatabases.PLATFORM_INFO.docs.install
-        )
-      } catch (e: any) {
-        if (e.status === 404) {
-          install = {
-            _id: StaticDatabases.PLATFORM_INFO.docs.install,
-            installId: newid(),
-            version: pkg.version,
-          }
+      let install = await getInstallFromDB()
+      if (!install) {
+        install = {
+          _id: StaticDatabases.PLATFORM_INFO.docs.install,
+          installId: newid(),
+          version: pkg.version,
+        }
+        try {
           const resp = await platformDb.put(install)
           install._rev = resp.rev
-        } else {
+          return install
+        } catch (e: any) {
+          if (e.status === 409) {
+            // already populated
+            // do nothing
+            return install
+          }
           throw e
         }
       }
-      return install
     }
   )
 }
