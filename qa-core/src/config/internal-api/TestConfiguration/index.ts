@@ -8,6 +8,7 @@ import ScreenApi from "./screens"
 import UserManagementApi from "./userManagement"
 import AccountsApi from "./accounts"
 import { generateAccount } from "../fixtures/accounts"
+import AutomationsAPI from "./automations"
 
 export default class TestConfiguration<T> {
   applications: ApplicationApi
@@ -20,6 +21,7 @@ export default class TestConfiguration<T> {
   accounts: AccountsApi
   apiClient: InternalAPIClient
   accountsApiClient: AccountsApiClient
+  automations: AutomationsAPI
 
   constructor(apiClient: InternalAPIClient, accountsApiClient: AccountsApiClient) {
     this.apiClient = apiClient
@@ -32,6 +34,7 @@ export default class TestConfiguration<T> {
     this.screen = new ScreenApi(this.apiClient)
     this.users = new UserManagementApi(this.apiClient)
     this.accounts = new AccountsApi(this.accountsApiClient)
+    this.automations = new AutomationsAPI(this.apiClient)
     this.context = <T>{}
   }
 
