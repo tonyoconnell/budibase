@@ -505,7 +505,7 @@ class InternalBuilder {
 class SqlQueryBuilder extends SqlTableQueryBuilder {
   private readonly limit: number
   // pass through client to get flavour of SQL
-  constructor(client: string, limit: number = BASE_LIMIT) {
+  constructor(client: SqlClient, limit: number = BASE_LIMIT) {
     super(client)
     this.limit = limit
   }

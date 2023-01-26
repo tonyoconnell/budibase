@@ -15,8 +15,9 @@ import {
   SqlClient,
 } from "./utils"
 import Sql from "./base/sql"
-import { PostgresColumn } from "./base/types"
+import { PostgresColumn, PostgresConstraint } from "./base/types"
 import { escapeDangerousCharacters } from "../utilities"
+import { constraintsToRelationships } from "./base/relationships"
 
 const { Client, types } = require("pg")
 
@@ -122,6 +123,7 @@ class PostgresIntegration extends Sql implements DatasourcePlus {
   public schemaErrors: Record<string, string> = {}
 
   COLUMNS_SQL!: string
+  CONSTRAINT_SQL!: string
 
   PRIMARY_KEYS_SQL = `
   select tc.table_schema, tc.table_name, kc.column_name as primary_key 
@@ -165,6 +167,16 @@ class PostgresIntegration extends Sql implements DatasourcePlus {
     }
     this.client.query(`SET search_path TO ${this.config.schema}`)
     this.COLUMNS_SQL = `select * from information_schema.columns where table_schema = '${this.config.schema}'`
+    this.CONSTRAINT_SQL = `select tc.*, 
+         kcu.column_name as foreign_key,
+         ccu.table_name as foreign_table_name,
+         ccu.column_name as foreign_column_name
+         from information_schema.table_constraints as tc
+         join information_schema.key_column_usage as kcu
+           on tc.constraint_name = kcu.constraint_name
+         join information_schema.constraint_column_usage as ccu
+           on ccu.constraint_name = tc.constraint_name
+       where constraint_type = 'FOREIGN KEY' and tc.table_schema = '${this.config.schema}'`
     this.open = true
   }
 
@@ -240,6 +252,9 @@ class PostgresIntegration extends Sql implements DatasourcePlus {
     try {
       const columnsResponse: { rows: PostgresColumn[] } =
         await this.client.query(this.COLUMNS_SQL)
+      const constraintsResponse: { rows: PostgresConstraint[] } =
+        await this.client.query(this.CONSTRAINT_SQL)
+      const constraints = constraintsResponse.rows
 
       const tables: { [key: string]: Table } = {}
 
@@ -280,7 +295,10 @@ class PostgresIntegration extends Sql implements DatasourcePlus {
         }
       }
 
-      const final = finaliseExternalTables(tables, entities)
+      const final = finaliseExternalTables(
+        constraintsToRelationships(this.sqlClient, constraints, tables),
+        entities
+      )
       this.tables = final.tables
       this.schemaErrors = final.errors
     } catch (err) {

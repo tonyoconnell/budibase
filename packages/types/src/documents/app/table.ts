@@ -25,6 +25,7 @@ export interface FieldSchema {
   timeOnly?: boolean
   lastID?: number
   useRichText?: boolean | null
+  _id?: string
   meta?: {
     toTable: string
     toKey: string

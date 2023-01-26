@@ -325,30 +325,6 @@ export async function checkForViewUpdates(
   }
 }
 
-export function generateForeignKey(column: any, relatedTable: any) {
-  return `fk_${relatedTable.name}_${column.fieldName}`
-}
-
-export function generateJunctionTableName(
-  column: any,
-  table: any,
-  relatedTable: any
-) {
-  return `jt_${table.name}_${relatedTable.name}_${column.name}_${column.fieldName}`
-}
-
-export function foreignKeyStructure(keyName: any, meta?: any) {
-  const structure: any = {
-    type: FieldTypes.NUMBER,
-    constraints: {},
-    name: keyName,
-  }
-  if (meta) {
-    structure.meta = meta
-  }
-  return structure
-}
-
 export function areSwitchableTypes(type1: any, type2: any) {
   if (
     SwitchableTypes.indexOf(type1) === -1 &&

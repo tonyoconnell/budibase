@@ -2,12 +2,7 @@ import {
   buildExternalTableId,
   breakExternalTableId,
 } from "../../../integrations/utils"
-import {
-  generateForeignKey,
-  generateJunctionTableName,
-  foreignKeyStructure,
-  hasTypeChanged,
-} from "./utils"
+import { hasTypeChanged } from "./utils"
 import { FieldTypes, RelationshipTypes } from "../../../constants"
 import { makeExternalQuery } from "../../../integrations/base/query"
 import { handleRequest } from "../row/external"
@@ -20,7 +15,7 @@ import {
   Operation,
   RenameColumn,
   FieldSchema,
-  BBContext,
+  UserCtx,
   TableRequest,
 } from "@budibase/types"
 import sdk from "../../../sdk"
@@ -54,39 +49,6 @@ async function makeTableRequest(
   return makeExternalQuery(datasource, json)
 }
 
-function cleanupRelationships(
-  table: Table,
-  tables: Record<string, Table>,
-  oldTable?: Table
-) {
-  const tableToIterate = oldTable ? oldTable : table
-  // clean up relationships in couch table schemas
-  for (let [key, schema] of Object.entries(tableToIterate.schema)) {
-    if (
-      schema.type === FieldTypes.LINK &&
-      (!oldTable || table.schema[key] == null)
-    ) {
-      const relatedTable = Object.values(tables).find(
-        table => table._id === schema.tableId
-      )
-      const foreignKey = schema.foreignKey
-      if (!relatedTable || !foreignKey) {
-        continue
-      }
-      for (let [relatedKey, relatedSchema] of Object.entries(
-        relatedTable.schema
-      )) {
-        if (
-          relatedSchema.type === FieldTypes.LINK &&
-          relatedSchema.fieldName === foreignKey
-        ) {
-          delete relatedTable.schema[relatedKey]
-        }
-      }
-    }
-  }
-}
-
 function getDatasourceId(table: Table) {
   if (!table) {
     throw "No table supplied"
@@ -97,103 +59,11 @@ function getDatasourceId(table: Table) {
   return breakExternalTableId(table._id).datasourceId
 }
 
-function otherRelationshipType(type?: string) {
-  if (type === RelationshipTypes.MANY_TO_MANY) {
-    return RelationshipTypes.MANY_TO_MANY
-  }
-  return type === RelationshipTypes.ONE_TO_MANY
-    ? RelationshipTypes.MANY_TO_ONE
-    : RelationshipTypes.ONE_TO_MANY
-}
-
-function generateManyLinkSchema(
-  datasource: Datasource,
-  column: FieldSchema,
-  table: Table,
-  relatedTable: Table
-): Table {
-  if (!table.primary || !relatedTable.primary) {
-    throw new Error("Unable to generate many link schema, no primary keys")
-  }
-  const primary = table.name + table.primary[0]
-  const relatedPrimary = relatedTable.name + relatedTable.primary[0]
-  const jcTblName = generateJunctionTableName(column, table, relatedTable)
-  // first create the new table
-  const junctionTable = {
-    _id: buildExternalTableId(datasource._id!, jcTblName),
-    name: jcTblName,
-    primary: [primary, relatedPrimary],
-    constrained: [primary, relatedPrimary],
-    schema: {
-      [primary]: foreignKeyStructure(primary, {
-        toTable: table.name,
-        toKey: table.primary[0],
-      }),
-      [relatedPrimary]: foreignKeyStructure(relatedPrimary, {
-        toTable: relatedTable.name,
-        toKey: relatedTable.primary[0],
-      }),
-    },
-  }
-  column.through = junctionTable._id
-  column.throughFrom = relatedPrimary
-  column.throughTo = primary
-  column.fieldName = relatedPrimary
-  return junctionTable
-}
-
-function generateLinkSchema(
-  column: FieldSchema,
-  table: Table,
-  relatedTable: Table,
-  type: string
-) {
-  if (!table.primary || !relatedTable.primary) {
-    throw new Error("Unable to generate link schema, no primary keys")
-  }
-  const isOneSide = type === RelationshipTypes.ONE_TO_MANY
-  const primary = isOneSide ? relatedTable.primary[0] : table.primary[0]
-  // generate a foreign key
-  const foreignKey = generateForeignKey(column, relatedTable)
-  column.relationshipType = type
-  column.foreignKey = isOneSide ? foreignKey : primary
-  column.fieldName = isOneSide ? primary : foreignKey
-  return foreignKey
-}
-
-function generateRelatedSchema(
-  linkColumn: FieldSchema,
-  table: Table,
-  relatedTable: Table,
-  columnName: string
-) {
-  // generate column for other table
-  const relatedSchema = cloneDeep(linkColumn)
-  // swap them from the main link
-  if (linkColumn.foreignKey) {
-    relatedSchema.fieldName = linkColumn.foreignKey
-    relatedSchema.foreignKey = linkColumn.fieldName
-  }
-  // is many to many
-  else {
-    // don't need to copy through, already got it
-    relatedSchema.fieldName = linkColumn.throughTo
-    relatedSchema.throughTo = linkColumn.throughFrom
-    relatedSchema.throughFrom = linkColumn.throughTo
-  }
-  relatedSchema.relationshipType = otherRelationshipType(
-    linkColumn.relationshipType
-  )
-  relatedSchema.tableId = relatedTable._id
-  relatedSchema.name = columnName
-  table.schema[columnName] = relatedSchema
-}
-
 function isRelationshipSetup(column: FieldSchema) {
   return column.foreignKey || column.through
 }
 
-export async function save(ctx: BBContext) {
+export async function save(ctx: UserCtx) {
   const table: TableRequest = ctx.request.body
   const renamed = table?._rename
   // can't do this right now
@@ -242,7 +112,7 @@ export async function save(ctx: BBContext) {
     const relatedColumnName = schema.fieldName!
     const relationType = schema.relationshipType!
     if (relationType === RelationshipTypes.MANY_TO_MANY) {
-      const junctionTable = generateManyLinkSchema(
+      const junctionTable = sdk.tables.generateManyLinkSchema(
         datasource,
         schema,
         table,
@@ -256,13 +126,13 @@ export async function save(ctx: BBContext) {
     } else {
       const fkTable =
         relationType === RelationshipTypes.ONE_TO_MANY ? table : relatedTable
-      const foreignKey = generateLinkSchema(
+      const foreignKey = sdk.tables.generateLinkSchema(
         schema,
         table,
         relatedTable,
         relationType
       )
-      fkTable.schema[foreignKey] = foreignKeyStructure(foreignKey)
+      fkTable.schema[foreignKey] = sdk.tables.foreignKeyStructure(foreignKey)
       if (fkTable.constrained == null) {
         fkTable.constrained = []
       }
@@ -274,11 +144,16 @@ export async function save(ctx: BBContext) {
         extraTablesToUpdate.push(fkTable)
       }
     }
-    generateRelatedSchema(schema, relatedTable, table, relatedColumnName)
+    sdk.tables.generateRelatedSchema(
+      schema,
+      relatedTable,
+      table,
+      relatedColumnName
+    )
     schema.main = true
   }
 
-  cleanupRelationships(tableToSave, tables, oldTable)
+  sdk.tables.cleanupRelationships(tableToSave, tables, oldTable)
 
   const operation = oldTable ? Operation.UPDATE_TABLE : Operation.CREATE_TABLE
   await makeTableRequest(
@@ -312,7 +187,7 @@ export async function save(ctx: BBContext) {
   return tableToSave
 }
 
-export async function destroy(ctx: BBContext) {
+export async function destroy(ctx: UserCtx) {
   const tableToDelete: TableRequest = await sdk.tables.getTable(
     ctx.params.tableId
   )
@@ -328,7 +203,7 @@ export async function destroy(ctx: BBContext) {
   const operation = Operation.DELETE_TABLE
   await makeTableRequest(datasource, operation, tableToDelete, tables)
 
-  cleanupRelationships(tableToDelete, tables)
+  sdk.tables.cleanupRelationships(tableToDelete, tables)
 
   delete datasource.entities[tableToDelete.name]
   await db.put(datasource)
@@ -336,7 +211,7 @@ export async function destroy(ctx: BBContext) {
   return tableToDelete
 }
 
-export async function bulkImport(ctx: BBContext) {
+export async function bulkImport(ctx: UserCtx) {
   const table = await sdk.tables.getTable(ctx.params.tableId)
   const { rows }: { rows: unknown } = ctx.request.body
   const schema: unknown = table.schema

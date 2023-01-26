@@ -1,6 +1,6 @@
 import { Knex, knex } from "knex"
 import { Operation, QueryJson, RenameColumn, Table } from "@budibase/types"
-import { breakExternalTableId } from "../utils"
+import { breakExternalTableId, SqlClient } from "../utils"
 import SchemaBuilder = Knex.SchemaBuilder
 import CreateTableBuilder = Knex.CreateTableBuilder
 const { FieldTypes, RelationshipTypes } = require("../../constants")
@@ -143,10 +143,10 @@ function buildDeleteTable(knex: SchemaBuilder, table: Table): SchemaBuilder {
 }
 
 class SqlTableQueryBuilder {
-  private readonly sqlClient: string
+  readonly sqlClient: SqlClient
 
   // pass through client to get flavour of SQL
-  constructor(client: string) {
+  constructor(client: SqlClient) {
     this.sqlClient = client
   }
 

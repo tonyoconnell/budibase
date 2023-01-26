@@ -80,6 +80,23 @@ export interface PostgresColumn {
   is_updatable: "NO" | "YES"
 }
 
+export interface PostgresConstraint {
+  constraint_catalog: string
+  constraint_schema: string
+  constraint_name: string
+  table_catalog: string
+  table_schema: string
+  table_name: string
+  constraint_type: string
+  is_deferrable: string
+  initially_deferred: string
+  enforced: string
+  nulls_distinct: null | string
+  foreign_table_name: string
+  foreign_column_name: string
+  foreign_key: string
+}
+
 export interface MySQLColumn {
   Field: string
   Type: string
