@@ -20,7 +20,7 @@ describe("accounts", () => {
   describe("metadata", () => {
     describe("saveMetadata", () => {
       it("saves account metadata", async () => {
-        let account = structures.accounts.account()
+        let account = structures.accounts.cloudAccount()
 
         const response = await config.api.accounts.saveMetadata(account)
 
@@ -32,7 +32,7 @@ describe("accounts", () => {
 
     describe("destroyMetadata", () => {
       it("destroys account metadata", async () => {
-        const account = structures.accounts.account()
+        const account = structures.accounts.cloudAccount()
         await config.api.accounts.saveMetadata(account)
 
         await config.api.accounts.destroyMetadata(account.accountId)

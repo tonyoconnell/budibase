@@ -1,36 +1,18 @@
-import {
-  Feature,
-  Hosting,
-  License,
-  MonthlyQuotaName,
-  PlanType,
-  PriceDuration,
-  Quotas,
-  StaticQuotaName,
-} from "../../sdk"
-import { MonthlyUsage, QuotaUsage, StaticUsage } from "../global"
+import { Feature, Hosting, License, PlanType, Quotas } from "../../sdk"
+import { QuotaUsage } from "../global"
 
 export interface CreateAccount {
   email: string
   tenantId: string
   hosting: Hosting
   authType: AuthType
-  // optional fields - for sso based sign ups
-  registrationStep?: string
-  // profile
-  tenantName?: string
-  name?: string
-  size?: string
-  profession?: string
+  tenantName: string
+  name: string
+  size: string
+  profession: string
+  password?: string
+  stripeCustomerId?: string
 }
-
-export interface CreatePassswordAccount extends CreateAccount {
-  password: string
-}
-
-export const isCreatePasswordAccount = (
-  account: CreateAccount
-): account is CreatePassswordAccount => account.authType === AuthType.PASSWORD
 
 export interface LicenseOverrides {
   features?: Feature[]
@@ -45,11 +27,10 @@ export interface Account extends CreateAccount {
   verified: boolean
   verificationSent: boolean
   // licensing
-  tier: string // deprecated
+  tier?: string // deprecated
   planType?: PlanType
   planTier?: number
   license?: License
-  stripeCustomerId?: string
   licenseKey?: string
   licenseKeyActivatedAt?: number
   licenseOverrides?: LicenseOverrides
@@ -66,7 +47,6 @@ export const isPasswordAccount = (
   account.authType === AuthType.PASSWORD && account.hosting === Hosting.SELF
 
 export interface CloudAccount extends Account {
-  password?: string
   budibaseUserId: string
 }
 

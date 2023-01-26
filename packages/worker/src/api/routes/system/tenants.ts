@@ -6,7 +6,7 @@ const router: Router = new Router()
 
 router.delete(
   "/api/system/tenants/:tenantId",
-  middleware.adminOnly,
+  middleware.internalApi,
   controller.delete
 )
 

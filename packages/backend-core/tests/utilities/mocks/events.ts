@@ -5,6 +5,7 @@ jest.spyOn(processors.analyticsProcessor, "processEvent")
 
 jest.spyOn(events.identification, "identifyTenantGroup")
 jest.spyOn(events.identification, "identifyUser")
+jest.spyOn(events.identification, "identifyAccount")
 
 jest.spyOn(events.backfill, "appSucceeded")
 jest.spyOn(events.backfill, "tenantSucceeded")

@@ -6,6 +6,8 @@ import {
   BulkUserResponse,
   CloudAccount,
   CreateAdminUserRequest,
+  CreateUserResponse,
+  Ctx,
   InviteUserRequest,
   InviteUsersRequest,
   SearchUsersRequest,
@@ -68,7 +70,9 @@ const parseBooleanParam = (param: any) => {
   return !(param && param === "false")
 }
 
-export const adminUser = async (ctx: any) => {
+export const adminUser = async (
+  ctx: Ctx<CreateAdminUserRequest, CreateUserResponse>
+) => {
   const { email, password, tenantId } = ctx.request
     .body as CreateAdminUserRequest
   await tenancy.doInTenant(tenantId, async () => {
