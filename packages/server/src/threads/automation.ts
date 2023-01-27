@@ -37,13 +37,9 @@ function getLoopIterations(loopStep: LoopStep, input: LoopInput) {
   if (!loopStep || !binding) {
     return 1
   }
-  if (Array.isArray(binding)) {
-    return binding.length
-  }
-  if (typeof binding === "string") {
-    return automationUtils.stringSplit(binding).length
-  }
-  return 1
+  return Array.isArray(binding)
+    ? binding.length
+    : automationUtils.stringSplit(binding).length
 }
 
 /**
@@ -284,13 +280,13 @@ class Orchestrator {
             break
           }
 
-          let item = []
+          let item
           if (
             typeof loopStep.inputs.binding === "string" &&
             loopStep.inputs.option === "String"
           ) {
             item = automationUtils.stringSplit(newInput.binding)
-          } else if (Array.isArray(loopStep.inputs.binding)) {
+          } else {
             item = loopStep.inputs.binding
           }
           this._context.steps[loopStepNumber] = {
