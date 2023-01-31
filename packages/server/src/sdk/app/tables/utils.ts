@@ -6,6 +6,7 @@ import {
   isSQL,
 } from "../../../integrations/utils"
 import { Table, Database } from "@budibase/types"
+import datasources from "../datasources"
 
 export async function getAllInternalTables(db?: Database): Promise<Table[]> {
   if (!db) {
@@ -25,9 +26,9 @@ export async function getAllInternalTables(db?: Database): Promise<Table[]> {
 
 export async function getAllExternalTables(
   datasourceId: any
-): Promise<Table[]> {
+): Promise<Record<string, Table>> {
   const db = context.getAppDB()
-  const datasource = await db.get(datasourceId)
+  const datasource = await datasources.get(datasourceId, { enriched: true })
   if (!datasource || !datasource.entities) {
     throw "Datasource is not configured fully."
   }
@@ -46,7 +47,7 @@ export async function getTable(tableId: any): Promise<Table> {
   const db = context.getAppDB()
   if (isExternalTable(tableId)) {
     let { datasourceId, tableName } = breakExternalTableId(tableId)
-    const datasource = await db.get(datasourceId)
+    const datasource = await datasources.get(datasourceId!)
     const table = await getExternalTable(datasourceId, tableName)
     return { ...table, sql: isSQL(datasource) }
   } else {
