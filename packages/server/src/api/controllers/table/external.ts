@@ -2,8 +2,13 @@ import {
   buildExternalTableId,
   breakExternalTableId,
 } from "../../../integrations/utils"
-import { hasTypeChanged } from "./utils"
-import { FieldTypes, RelationshipTypes } from "../../../constants"
+import { FieldTypes } from "../../../constants"
+import {
+  generateForeignKey,
+  generateJunctionTableName,
+  foreignKeyStructure,
+  hasTypeChanged,
+} from "./utils"
 import { makeExternalQuery } from "../../../integrations/base/query"
 import { handleRequest } from "../row/external"
 import { events, context } from "@budibase/backend-core"
@@ -17,6 +22,7 @@ import {
   FieldSchema,
   UserCtx,
   TableRequest,
+  RelationshipTypes,
 } from "@budibase/types"
 import sdk from "../../../sdk"
 const { cloneDeep } = require("lodash/fp")
@@ -57,6 +63,98 @@ function getDatasourceId(table: Table) {
     return table.sourceId
   }
   return breakExternalTableId(table._id).datasourceId
+}
+
+function otherRelationshipType(type?: string) {
+  if (type === RelationshipTypes.MANY_TO_MANY) {
+    return RelationshipTypes.MANY_TO_MANY
+  }
+  return type === RelationshipTypes.ONE_TO_MANY
+    ? RelationshipTypes.MANY_TO_ONE
+    : RelationshipTypes.ONE_TO_MANY
+}
+
+function generateManyLinkSchema(
+  datasource: Datasource,
+  column: FieldSchema,
+  table: Table,
+  relatedTable: Table
+): Table {
+  if (!table.primary || !relatedTable.primary) {
+    throw new Error("Unable to generate many link schema, no primary keys")
+  }
+  const primary = table.name + table.primary[0]
+  const relatedPrimary = relatedTable.name + relatedTable.primary[0]
+  const jcTblName = generateJunctionTableName(column, table, relatedTable)
+  // first create the new table
+  const junctionTable = {
+    _id: buildExternalTableId(datasource._id!, jcTblName),
+    name: jcTblName,
+    primary: [primary, relatedPrimary],
+    constrained: [primary, relatedPrimary],
+    schema: {
+      [primary]: foreignKeyStructure(primary, {
+        toTable: table.name,
+        toKey: table.primary[0],
+      }),
+      [relatedPrimary]: foreignKeyStructure(relatedPrimary, {
+        toTable: relatedTable.name,
+        toKey: relatedTable.primary[0],
+      }),
+    },
+  }
+  column.through = junctionTable._id
+  column.throughFrom = relatedPrimary
+  column.throughTo = primary
+  column.fieldName = relatedPrimary
+  return junctionTable
+}
+
+function generateLinkSchema(
+  column: FieldSchema,
+  table: Table,
+  relatedTable: Table,
+  type: RelationshipTypes
+) {
+  if (!table.primary || !relatedTable.primary) {
+    throw new Error("Unable to generate link schema, no primary keys")
+  }
+  const isOneSide = type === RelationshipTypes.ONE_TO_MANY
+  const primary = isOneSide ? relatedTable.primary[0] : table.primary[0]
+  // generate a foreign key
+  const foreignKey = generateForeignKey(column, relatedTable)
+  column.relationshipType = type
+  column.foreignKey = isOneSide ? foreignKey : primary
+  column.fieldName = isOneSide ? primary : foreignKey
+  return foreignKey
+}
+
+function generateRelatedSchema(
+  linkColumn: FieldSchema,
+  table: Table,
+  relatedTable: Table,
+  columnName: string
+) {
+  // generate column for other table
+  const relatedSchema = cloneDeep(linkColumn)
+  // swap them from the main link
+  if (linkColumn.foreignKey) {
+    relatedSchema.fieldName = linkColumn.foreignKey
+    relatedSchema.foreignKey = linkColumn.fieldName
+  }
+  // is many to many
+  else {
+    // don't need to copy through, already got it
+    relatedSchema.fieldName = linkColumn.throughTo
+    relatedSchema.throughTo = linkColumn.throughFrom
+    relatedSchema.throughFrom = linkColumn.throughTo
+  }
+  relatedSchema.relationshipType = otherRelationshipType(
+    linkColumn.relationshipType
+  )
+  relatedSchema.tableId = relatedTable._id
+  relatedSchema.name = columnName
+  table.schema[columnName] = relatedSchema
 }
 
 function isRelationshipSetup(column: FieldSchema) {
