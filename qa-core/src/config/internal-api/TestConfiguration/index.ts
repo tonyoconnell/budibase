@@ -7,6 +7,7 @@ import RowApi from "./rows"
 import ScreenApi from "./screens"
 import UserManagementApi from "./userManagement"
 import AccountsApi from "./accounts"
+import ViewsApi from "./views"
 import { generateAccount } from "../fixtures/accounts"
 
 export default class TestConfiguration<T> {
@@ -16,6 +17,7 @@ export default class TestConfiguration<T> {
   context: T
   tables: TablesApi
   rows: RowApi
+  views: ViewsApi
   users: UserManagementApi
   accounts: AccountsApi
   apiClient: InternalAPIClient
@@ -33,6 +35,7 @@ export default class TestConfiguration<T> {
     this.rows = new RowApi(this.apiClient)
     this.auth = new AuthApi(this.apiClient)
     this.screen = new ScreenApi(this.apiClient)
+    this.views = new ViewsApi(this.apiClient)
     this.users = new UserManagementApi(this.apiClient)
     this.accounts = new AccountsApi(this.accountsApiClient)
     this.context = <T>{}
@@ -63,6 +66,7 @@ export default class TestConfiguration<T> {
     this.rows = new RowApi(this.apiClient)
     this.auth = new AuthApi(this.apiClient)
     this.screen = new ScreenApi(this.apiClient)
+    this.views = new ViewsApi(this.apiClient)
     this.users = new UserManagementApi(this.apiClient)
     this.context = <T>{}
   }
