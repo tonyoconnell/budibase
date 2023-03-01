@@ -6,11 +6,11 @@ import {
   SearchFilters,
   SortDirection,
 } from "@budibase/types"
+import { db as dbCore } from "@budibase/backend-core"
 import { QueryOptions } from "../../definitions/datasource"
 import { isIsoDateString, SqlClient } from "../utils"
 import SqlTableQueryBuilder from "./sqlTable"
 import environment from "../../environment"
-import { removeKeyNumbering } from "./utils"
 
 const envLimit = environment.SQL_MAX_ROWS
   ? parseInt(environment.SQL_MAX_ROWS)
@@ -136,7 +136,7 @@ class InternalBuilder {
       fn: (key: string, value: any) => void
     ) {
       for (let [key, value] of Object.entries(structure)) {
-        const updatedKey = removeKeyNumbering(key)
+        const updatedKey = dbCore.removeKeyNumbering(key)
         const isRelationshipField = updatedKey.includes(".")
         if (!opts.relationship && !isRelationshipField) {
           fn(`${opts.tableName}.${updatedKey}`, value)
@@ -248,6 +248,19 @@ class InternalBuilder {
     }
     if (filters.range) {
       iterate(filters.range, (key, value) => {
+        const isEmptyObject = (val: any) => {
+          return (
+            val &&
+            Object.keys(val).length === 0 &&
+            Object.getPrototypeOf(val) === Object.prototype
+          )
+        }
+        if (isEmptyObject(value.low)) {
+          value.low = ""
+        }
+        if (isEmptyObject(value.high)) {
+          value.high = ""
+        }
         if (value.low && value.high) {
           // Use a between operator if we have 2 valid range values
           const fnc = allOr ? "orWhereBetween" : "whereBetween"
@@ -402,9 +415,7 @@ class InternalBuilder {
     if (opts.disableReturning) {
       return query.insert(parsedBody)
     } else {
-      return query
-        .insert(parsedBody)
-        .returning(generateSelectStatement(json, knex))
+      return query.insert(parsedBody).returning("*")
     }
   }
 
@@ -489,9 +500,7 @@ class InternalBuilder {
     if (opts.disableReturning) {
       return query.update(parsedBody)
     } else {
-      return query
-        .update(parsedBody)
-        .returning(generateSelectStatement(json, knex))
+      return query.update(parsedBody).returning("*")
     }
   }
 

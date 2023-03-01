@@ -24,6 +24,7 @@
   export let getOptionLabel = option => option
   export let getOptionValue = option => option
   export let getOptionIcon = () => null
+  export let useOptionIconImage = false
   export let getOptionColour = () => null
   export let open = false
   export let readonly = false
@@ -31,6 +32,10 @@
   export let autoWidth = false
   export let autocomplete = false
   export let sort = false
+  export let fetchTerm = null
+  export let customPopoverHeight
+  export let align = "left"
+  export let footer = null
 
   const dispatch = createEventDispatcher()
 
@@ -71,7 +76,7 @@
   }
 
   const getFilteredOptions = (options, term, getLabel) => {
-    if (autocomplete && term) {
+    if (autocomplete && term && !fetchTerm) {
       const lowerCaseTerm = term.toLowerCase()
       return options.filter(option => {
         return `${getLabel(option)}`.toLowerCase().includes(lowerCaseTerm)
@@ -130,12 +135,13 @@
 
 <Popover
   anchor={button}
-  align="left"
+  align={align || "left"}
   bind:this={popover}
   {open}
   on:close={() => (open = false)}
   useAnchorWidth={!autoWidth}
   maxWidth={autoWidth ? 400 : null}
+  customHeight={customPopoverHeight}
 >
   <div
     class="popover-content"
@@ -144,8 +150,9 @@
   >
     {#if autocomplete}
       <Search
-        value={searchTerm}
-        on:change={event => (searchTerm = event.detail)}
+        value={fetchTerm ? fetchTerm : searchTerm}
+        on:change={event =>
+          fetchTerm ? (fetchTerm = event.detail) : (searchTerm = event.detail)}
         {disabled}
         placeholder="Search"
       />
@@ -183,7 +190,16 @@
           >
             {#if getOptionIcon(option, idx)}
               <span class="option-extra icon">
-                <Icon size="S" name={getOptionIcon(option, idx)} />
+                {#if useOptionIconImage}
+                  <img
+                    src={getOptionIcon(option, idx)}
+                    alt="icon"
+                    width="15"
+                    height="15"
+                  />
+                {:else}
+                  <Icon size="S" name={getOptionIcon(option, idx)} />
+                {/if}
               </span>
             {/if}
             {#if getOptionColour(option, idx)}
@@ -205,6 +221,12 @@
         {/each}
       {/if}
     </ul>
+
+    {#if footer}
+      <div class="footer">
+        {footer}
+      </div>
+    {/if}
   </div>
 </Popover>
 
@@ -247,7 +269,7 @@
   }
   .popover-content.auto-width .spectrum-Menu-itemLabel {
     white-space: nowrap;
-    overflow: hidden;
+    overflow: none;
     text-overflow: ellipsis;
   }
   .popover-content:not(.auto-width) .spectrum-Menu-itemLabel {
@@ -280,5 +302,12 @@
   }
   .popover-content :global(.spectrum-Search .spectrum-Textfield-icon) {
     top: 9px;
+  }
+
+  .footer {
+    padding: 4px 12px 12px 12px;
+    font-style: italic;
+    max-width: 170px;
+    font-size: 12px;
   }
 </style>
