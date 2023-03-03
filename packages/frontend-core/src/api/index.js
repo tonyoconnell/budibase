@@ -29,6 +29,7 @@ import { buildBackupsEndpoints } from "./backups"
 import { buildEnvironmentVariableEndpoints } from "./environmentVariables"
 import { buildEventEndpoints } from "./events"
 import { buildAuditLogsEndpoints } from "./auditLogs"
+import { buildMediaEndpoints } from "./media"
 
 const defaultAPIClientConfig = {
   /**
@@ -253,5 +254,6 @@ export const createAPIClient = config => {
     ...buildEnvironmentVariableEndpoints(API),
     ...buildEventEndpoints(API),
     ...buildAuditLogsEndpoints(API),
+    ...buildMediaEndpoints(API),
   }
 }

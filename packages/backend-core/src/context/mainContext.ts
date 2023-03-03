@@ -35,6 +35,18 @@ export function getAuditLogDBName(tenantId?: string) {
   }
 }
 
+export function getMediaDBName(tenantId?: string) {
+  //ignore tenant for the mo.
+  if (!tenantId) {
+    tenantId = getTenantId()
+  }
+  if (tenantId === DEFAULT_TENANT_ID) {
+    return StaticDatabases.MEDIA.name
+  } else {
+    return `${tenantId}${SEPARATOR}${StaticDatabases.MEDIA.name}`
+  }
+}
+
 export function baseGlobalDBName(tenantId: string | undefined | null) {
   if (!tenantId || tenantId === DEFAULT_TENANT_ID) {
     return StaticDatabases.GLOBAL.name
@@ -238,6 +250,12 @@ export function getAuditLogsDB(): Database {
   return getDB(getAuditLogDBName())
 }
 
+export function getMediaDB(): Database {
+  if (!getTenantId()) {
+    throw new Error("No tenant ID found - cannot open media DB")
+  }
+  return getDB(getMediaDBName())
+}
 /**
  * Gets the app database based on whatever the request
  * contained, dev or prod.

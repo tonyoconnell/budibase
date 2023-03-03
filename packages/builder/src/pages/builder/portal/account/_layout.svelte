@@ -7,6 +7,7 @@
   $: wide = $isActive("./auditLogs")
   $: pages = $menu.find(x => x.title === "Account")?.subPages || []
   $: !pages.length && $goto("../")
+  $: console.log("pages ", pages)
 </script>
 
 <Page>
@@ -16,6 +17,11 @@
         {#each pages as { title, href }}
           <SideNavItem text={title} url={href} active={$isActive(href)} />
         {/each}
+        <SideNavItem
+          text={"Media"}
+          url={"/builder/portal/account/media"}
+          active={$isActive("/builder/portal/account/media")}
+        />
       </SideNav>
     </div>
     <slot />

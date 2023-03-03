@@ -71,6 +71,8 @@ export enum DocumentType {
   AUDIT_LOG = "al",
 }
 
+// row type > media_
+
 export const StaticDatabases = {
   GLOBAL: {
     name: "global-db",
@@ -91,6 +93,9 @@ export const StaticDatabases = {
   },
   AUDIT_LOGS: {
     name: "audit-logs",
+  },
+  MEDIA: {
+    name: "media-db",
   },
 }
 
