@@ -107,7 +107,4 @@ export interface Database {
   // should be replaced by better typed/non-pouch implemented methods
   dump(stream: Writable, opts?: DatabaseDumpOpts): Promise<any>
   load(...args: any[]): Promise<any>
-  createIndex(...args: any[]): Promise<any>
-  deleteIndex(...args: any[]): Promise<any>
-  getIndexes(...args: any[]): Promise<any>
 }

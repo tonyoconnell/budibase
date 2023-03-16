@@ -162,17 +162,6 @@ export async function destroy(ctx: any) {
   // don't remove the table itself until very end
   await db.remove(tableToDelete._id, tableToDelete._rev)
 
-  // remove table search index
-  if (!env.isTest() || env.COUCH_DB_URL) {
-    const currentIndexes = await db.getIndexes()
-    const existingIndex = currentIndexes.indexes.find(
-      (existing: any) => existing.name === `search:${ctx.params.tableId}`
-    )
-    if (existingIndex) {
-      await db.deleteIndex(existingIndex)
-    }
-  }
-
   // has to run after, make sure it has _id
   await runStaticFormulaChecks(tableToDelete, {
     deletion: true,

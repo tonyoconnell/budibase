@@ -214,19 +214,4 @@ export class DatabaseImpl implements Database {
     // @ts-ignore
     return pouch.load(stream)
   }
-
-  async createIndex(opts: DatabaseCreateIndexOpts) {
-    const pouch = getPouchDB(this.name)
-    return pouch.createIndex(opts)
-  }
-
-  async deleteIndex(opts: DatabaseDeleteIndexOpts) {
-    const pouch = getPouchDB(this.name)
-    return pouch.deleteIndex(opts)
-  }
-
-  async getIndexes() {
-    const pouch = getPouchDB(this.name)
-    return pouch.getIndexes()
-  }
 }
