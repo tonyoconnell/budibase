@@ -1278,14 +1278,14 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@budibase/backend-core@2.4.5-alpha.0":
-  version "2.4.5-alpha.0"
-  resolved "https://registry.yarnpkg.com/@budibase/backend-core/-/backend-core-2.4.5-alpha.0.tgz#1ad27485489e2e9e5acf097767bf713195f78775"
-  integrity sha512-Bt6BAEcZmHxewOubGDf+HyOfOHeh7u71i2CwW/l5LQEI7Pbf1Ymok7VcXEmyIc1ykmR1pOgd9zyn4sv07rN+5g==
+"@budibase/backend-core@2.4.27-alpha.4":
+  version "2.4.27-alpha.4"
+  resolved "https://registry.yarnpkg.com/@budibase/backend-core/-/backend-core-2.4.27-alpha.4.tgz#b603dc15278d63e0af0546637da4182c080dbaac"
+  integrity sha512-U8S7eDSzm1Lt3b80GwVo2oglgFs08OWK1zPG28Cd556d/YKfbpw2ifDXUYYQkJkmN0j8yoe2547kFGSesfxwCw==
   dependencies:
     "@budibase/nano" "10.1.2"
     "@budibase/pouchdb-replication-stream" "1.2.10"
-    "@budibase/types" "2.4.5-alpha.0"
+    "@budibase/types" "2.4.27-alpha.4"
     "@shopify/jest-koa-mocks" "5.0.1"
     "@techpass/passport-openidconnect" "0.3.2"
     aws-cloudfront-sign "2.2.0"
@@ -1417,14 +1417,14 @@
     pouchdb-promise "^6.0.4"
     through2 "^2.0.0"
 
-"@budibase/pro@2.4.5-alpha.0":
-  version "2.4.5-alpha.0"
-  resolved "https://registry.yarnpkg.com/@budibase/pro/-/pro-2.4.5-alpha.0.tgz#0e8dd45cc9b75c0004a68ac4702f9288fc664c34"
-  integrity sha512-vCuWzdpjbdhhMTKEW9dU0ivdjJ/vwR7UbzOyg/XOiW+M+hk/AM5q9VQHNChAN0tEfbVsnAZyrGYmjPlLsaRnjA==
+"@budibase/pro@2.4.27-alpha.4":
+  version "2.4.27-alpha.4"
+  resolved "https://registry.yarnpkg.com/@budibase/pro/-/pro-2.4.27-alpha.4.tgz#69406a5acd8756eea1c929ed5adea2c15e327abe"
+  integrity sha512-eM2Cozcqm8PQIlMxOHoektr02IkKy2Vi41UvWZwaPmOuWttPIAuk7oU0t9TRe26QEPMgvxKtjXxaKpl0rqVikw==
   dependencies:
-    "@budibase/backend-core" "2.4.5-alpha.0"
+    "@budibase/backend-core" "2.4.27-alpha.4"
     "@budibase/string-templates" "2.3.20"
-    "@budibase/types" "2.4.5-alpha.0"
+    "@budibase/types" "2.4.27-alpha.4"
     "@koa/router" "8.0.8"
     bull "4.10.1"
     joi "17.6.0"
@@ -1463,10 +1463,10 @@
     lodash "^4.17.20"
     vm2 "^3.9.4"
 
-"@budibase/types@2.4.5-alpha.0":
-  version "2.4.5-alpha.0"
-  resolved "https://registry.yarnpkg.com/@budibase/types/-/types-2.4.5-alpha.0.tgz#70fea09b5e471fe8fa6a760a1a2dd0dd74caac3a"
-  integrity sha512-tVFM9XnKwcCOo7nw6v7C8ZsK9hQLQBv3kHDn7/MFWnDMFCj72pUdtP/iFrAKr2c3tE84lkkWJfNHIolMSktHZA==
+"@budibase/types@2.4.27-alpha.4":
+  version "2.4.27-alpha.4"
+  resolved "https://registry.yarnpkg.com/@budibase/types/-/types-2.4.27-alpha.4.tgz#c04dc2fe410e23c3f1e27d50dda690e3021178f9"
+  integrity sha512-HZuEVs6kRBHn/ajr3MTz7htFM9okByswQzXhmgC1KdGnaoJOlSTyxOFAaPLrmTJGnTGCbgK486N46cZZFuzzeQ==
 
 "@bull-board/api@3.7.0":
   version "3.7.0"
@@ -4036,6 +4036,11 @@ acorn@^8.4.1, acorn@^8.5.0, acorn@^8.7.0:
   resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.7.1.tgz#0197122c843d1bf6d0a5e83220a788f278f63c30"
   integrity sha512-Xx54uLJQZ19lKygFXOWsscKUbsBZW0CPykPhVQdhIeIwrbPmJzqeASDInc8nKBnp/JT6igTs82qPXz069H8I/A==
 
+acorn@^8.7.1:
+  version "8.8.2"
+  resolved "https://registry.yarnpkg.com/acorn/-/acorn-8.8.2.tgz#1b2f25db02af965399b9776b0c2c391276d37c4a"
+  integrity sha512-xjIYgE8HBrkpd/sJqOGNspf8uHG+NOHGOw6a/Urj8taM2EXfdNAH2oFcPeIFfsv3+kz/mJrS5VuMqbNLjCa2vw==
+
 adal-node@^0.2.2:
   version "0.2.3"
   resolved "https://registry.yarnpkg.com/adal-node/-/adal-node-0.2.3.tgz#87ed3dbed344f6e114e36bf18fe1c4e7d3cc6069"
@@ -6478,10 +6483,10 @@ engine.io@~6.2.0:
     engine.io-parser "~5.0.3"
     ws "~8.2.3"
 
-enhanced-resolve@^5.9.3:
-  version "5.9.3"
-  resolved "https://registry.yarnpkg.com/enhanced-resolve/-/enhanced-resolve-5.9.3.tgz#44a342c012cbc473254af5cc6ae20ebd0aae5d88"
-  integrity sha512-Bq9VSor+kjvW3f9/MiiR4eE3XYgOl7/rS8lnSxbRbF3kS0B2r+Y9w5krBWxZgDxASVZbdYrn5wT4j/Wb0J9qow==
+enhanced-resolve@^5.10.0:
+  version "5.12.0"
+  resolved "https://registry.yarnpkg.com/enhanced-resolve/-/enhanced-resolve-5.12.0.tgz#300e1c90228f5b570c4d35babf263f6da7155634"
+  integrity sha512-QHTXI/sZQmko1cbDoNAa3mJ5qhWUUNAq3vR0/YiD379fWQrcfuoX1+HW2S0MTt7XmoPLapdaDKUtelUSPic7hQ==
   dependencies:
     graceful-fs "^4.2.4"
     tapable "^2.2.0"
@@ -15600,7 +15605,7 @@ walker@^1.0.7, walker@^1.0.8, walker@~1.0.5:
   dependencies:
     makeerror "1.0.12"
 
-watchpack@^2.3.1:
+watchpack@^2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/watchpack/-/watchpack-2.4.0.tgz#fa33032374962c78113f93c7f2fb4c54c9862a5d"
   integrity sha512-Lcvm7MGST/4fup+ifyKi2hjyIAwcdI4HRgtvTpIUxBRhB+RFtUh8XtDOxUfctVCnhVi+QQj49i91OyvzkJl6cg==
@@ -15671,20 +15676,20 @@ webpack-sources@^3.2.3:
   integrity sha512-/DyMEOrDgLKKIG0fmvtz+4dUX/3Ghozwgm6iPp8KRhvn+eQf9+Q7GWxVNMk3+uCPWfdXYC4ExGBckIXdFEfH1w==
 
 webpack@^5.64.2:
-  version "5.73.0"
-  resolved "https://registry.yarnpkg.com/webpack/-/webpack-5.73.0.tgz#bbd17738f8a53ee5760ea2f59dce7f3431d35d38"
-  integrity sha512-svjudQRPPa0YiOYa2lM/Gacw0r6PvxptHj4FuEKQ2kX05ZLkjbVc5MnPs6its5j7IZljnIqSVo/OsY2X0IpHGA==
+  version "5.76.1"
+  resolved "https://registry.yarnpkg.com/webpack/-/webpack-5.76.1.tgz#7773de017e988bccb0f13c7d75ec245f377d295c"
+  integrity sha512-4+YIK4Abzv8172/SGqObnUjaIHjLEuUasz9EwQj/9xmPPkYJy2Mh03Q/lJfSD3YLzbxy5FeTq5Uw0323Oh6SJQ==
   dependencies:
     "@types/eslint-scope" "^3.7.3"
     "@types/estree" "^0.0.51"
     "@webassemblyjs/ast" "1.11.1"
     "@webassemblyjs/wasm-edit" "1.11.1"
     "@webassemblyjs/wasm-parser" "1.11.1"
-    acorn "^8.4.1"
+    acorn "^8.7.1"
     acorn-import-assertions "^1.7.6"
     browserslist "^4.14.5"
     chrome-trace-event "^1.0.2"
-    enhanced-resolve "^5.9.3"
+    enhanced-resolve "^5.10.0"
     es-module-lexer "^0.9.0"
     eslint-scope "5.1.1"
     events "^3.2.0"
@@ -15697,7 +15702,7 @@ webpack@^5.64.2:
     schema-utils "^3.1.0"
     tapable "^2.1.1"
     terser-webpack-plugin "^5.1.3"
-    watchpack "^2.3.1"
+    watchpack "^2.4.0"
     webpack-sources "^3.2.3"
 
 whatwg-encoding@^1.0.1, whatwg-encoding@^1.0.3:
