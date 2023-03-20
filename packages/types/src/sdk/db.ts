@@ -1,5 +1,5 @@
 import Nano from "@budibase/nano"
-import { AllDocsResponse, AnyDocument, Document } from "../"
+import { AllDocsResponse, AnyDocument, Document, FindDocsResponse } from "../"
 import { Writable } from "stream"
 
 export enum SearchIndex {
@@ -101,6 +101,7 @@ export interface Database {
     viewName: string,
     params: DatabaseQueryOpts
   ): Promise<AllDocsResponse<T>>
+  find<T>(params: Nano.MangoQuery): Promise<FindDocsResponse<T>>
   destroy(): Promise<Nano.OkResponse | void>
   compact(): Promise<Nano.OkResponse | void>
   // these are all PouchDB related functions that are rarely used - in future

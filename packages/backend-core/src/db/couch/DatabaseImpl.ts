@@ -1,4 +1,4 @@
-import Nano from "@budibase/nano"
+import Nano, { MangoSelector } from "@budibase/nano"
 import {
   AllDocsResponse,
   AnyDocument,
@@ -6,15 +6,17 @@ import {
   DatabaseOpts,
   DatabaseQueryOpts,
   DatabasePutOpts,
-  DatabaseCreateIndexOpts,
-  DatabaseDeleteIndexOpts,
   Document,
   isDocument,
+  FindDocsResponse,
+  RowResponse,
+  CreateIndexResponse,
 } from "@budibase/types"
 import { getCouchInfo } from "./connections"
 import { directCouchCall } from "./utils"
 import { getPouchDB } from "./pouchDB"
 import { WriteStream, ReadStream } from "fs"
+import { STANDARD_DESIGN_DOC } from "../../constants"
 import { newid } from "../../newid"
 
 function buildNano(couchInfo: { url: string; cookie: string }) {
@@ -181,6 +183,33 @@ export class DatabaseImpl implements Database {
     const db = await this.checkSetup()
     const [database, view] = viewName.split("/")
     return this.updateOutput(() => db.view(database, view, params))
+  }
+
+  async find<T>(params: Nano.MangoQuery): Promise<FindDocsResponse<T>> {
+    const db = await this.checkSetup()
+    const resp = await this.updateOutput(() => db.find(params))
+    return {
+      rows: resp.docs as RowResponse<T>[],
+      bookmark: resp.bookmark,
+    }
+  }
+
+  async findIndex(
+    name: string,
+    fields: string[],
+    opts?: { partial?: Nano.MangoSelector; order: "asc" | "desc" }
+  ): Promise<CreateIndexResponse> {
+    const db = await this.checkSetup()
+    const finalFields = fields.map(field => ({ [field]: opts?.order || "asc" }))
+    return db.createIndex({
+      ddoc: STANDARD_DESIGN_DOC,
+      name,
+      type: "json",
+      index: {
+        fields: finalFields,
+        partial_filter_selector: opts?.partial,
+      },
+    })
   }
 
   async destroy() {

@@ -17,6 +17,16 @@ export interface AllDocsResponse<T> {
   rows: RowResponse<T>[]
 }
 
+export interface FindDocsResponse<T> {
+  bookmark: string
+  rows: RowResponse<T>[]
+}
+
+export interface CreateIndexResponse {
+  id: string
+  name: string
+}
+
 export type BulkDocsResponse = BulkDocResponse[]
 
 interface BulkDocResponse {
