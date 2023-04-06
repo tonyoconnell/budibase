@@ -41,6 +41,7 @@ export default class UserFetch extends DataFetch {
         rows: res?.data || [],
         hasNextPage: res?.hasNextPage || false,
         cursor: res?.nextPage || null,
+        totalRows: res?.total,
       }
     } catch (error) {
       return {

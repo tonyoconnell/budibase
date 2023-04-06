@@ -215,6 +215,7 @@ export const search = async (
     })
     const result: SearchUsersResponse = {
       data: users.rows,
+      total: users.totalRows,
       hasNextPage: !!users.bookmark,
       nextPage: users.bookmark,
     }

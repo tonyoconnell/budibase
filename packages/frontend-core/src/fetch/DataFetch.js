@@ -180,6 +180,7 @@ export default class DataFetch {
       info: page.info,
       cursors: paginate && page.hasNextPage ? [null, page.cursor] : [null],
       error: page.error,
+      totalRows: page.totalRows,
     }))
   }
 
@@ -192,7 +193,8 @@ export default class DataFetch {
     const features = get(this.featureStore)
 
     // Get the actual data
-    let { rows, info, hasNextPage, cursor, error } = await this.getData()
+    let { rows, info, hasNextPage, cursor, error, totalRows } =
+      await this.getData()
 
     // If we don't support searching, do a client search
     if (!features.supportsSearch) {
@@ -215,6 +217,7 @@ export default class DataFetch {
       hasNextPage,
       cursor,
       error,
+      totalRows,
     }
   }
 
@@ -356,13 +359,14 @@ export default class DataFetch {
       return
     }
     this.store.update($store => ({ ...$store, loading: true }))
-    const { rows, info, error } = await this.getPage()
+    const { rows, info, error, totalRows } = await this.getPage()
     this.store.update($store => ({
       ...$store,
       rows,
       info,
       loading: false,
       error,
+      totalRows,
     }))
   }
 
@@ -403,7 +407,8 @@ export default class DataFetch {
       cursor: nextCursor,
       pageNumber: $store.pageNumber + 1,
     }))
-    const { rows, info, hasNextPage, cursor, error } = await this.getPage()
+    const { rows, info, hasNextPage, cursor, error, totalRows } =
+      await this.getPage()
 
     // Update state
     this.store.update($store => {
@@ -418,6 +423,7 @@ export default class DataFetch {
         cursors,
         loading: false,
         error,
+        totalRows,
       }
     })
   }
@@ -439,7 +445,7 @@ export default class DataFetch {
       cursor: prevCursor,
       pageNumber: $store.pageNumber - 1,
     }))
-    const { rows, info, error } = await this.getPage()
+    const { rows, info, error, totalRows } = await this.getPage()
 
     // Update state
     this.store.update($store => {
@@ -449,6 +455,7 @@ export default class DataFetch {
         info,
         loading: false,
         error,
+        totalRows,
       }
     })
   }

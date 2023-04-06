@@ -57,6 +57,7 @@ export interface SearchUsersResponse {
   data: User[]
   hasNextPage: boolean
   nextPage: string | undefined
+  total: number
 }
 
 export interface FindUsersFilters {
