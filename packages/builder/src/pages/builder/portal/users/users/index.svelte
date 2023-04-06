@@ -276,6 +276,7 @@
   <div class="pagination">
     <Pagination
       page={$fetch.pageNumber + 1}
+      total={$fetch.totalRows}
       hasPrevPage={$fetch.loading ? false : $fetch.hasPrevPage}
       hasNextPage={$fetch.loading ? false : $fetch.hasNextPage}
       goToPrevPage={fetch.prevPage}

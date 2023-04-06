@@ -4,12 +4,16 @@
   import "@spectrum-css/typography/dist/index-vars.css"
 
   export let page
+  export let total
   export let goToPrevPage
   export let goToNextPage
   export let hasPrevPage = true
   export let hasNextPage = true
 </script>
 
+{#if total != undefined}
+  <div class="pagination-total">Total: {total}</div>
+{/if}
 <nav class="spectrum-Pagination spectrum-Pagination--explicit">
   <div
     href="#"
@@ -53,5 +57,11 @@
   }
   .is-disabled:hover {
     cursor: initial;
+  }
+
+  .pagination-total {
+    display: flex;
+    align-self: center;
+    flex-grow: 1;
   }
 </style>
