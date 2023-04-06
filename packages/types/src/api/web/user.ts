@@ -51,6 +51,7 @@ export interface SearchUsersRequest {
   email?: string
   appId?: string
   paginated?: boolean
+  includeDeactivated?: boolean
 }
 
 export interface SearchUsersResponse {

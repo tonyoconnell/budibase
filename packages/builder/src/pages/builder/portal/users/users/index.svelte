@@ -11,6 +11,7 @@
     notifications,
     Pagination,
     Divider,
+    Toggle,
   } from "@budibase/bbui"
   import AddUserModal from "./_components/AddUserModal.svelte"
   import {
@@ -221,6 +222,14 @@
     }
   }
 
+  const onIncludeDeactivatedChanged = async e => {
+    await fetch.update({
+      query: {
+        includeDeactivated: e.detail,
+      },
+    })
+  }
+
   onMount(async () => {
     try {
       await groups.actions.init()
@@ -251,6 +260,10 @@
       <ScimBanner />
     {/if}
     <div class="controls-right">
+      <Toggle
+        text="Include deactivated"
+        on:change={onIncludeDeactivatedChanged}
+      />
       <Search bind:value={searchEmail} placeholder="Search" />
       {#if selectedRows.length > 0}
         <DeleteRowsButton

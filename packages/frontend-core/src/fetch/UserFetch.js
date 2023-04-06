@@ -36,6 +36,8 @@ export default class UserFetch extends DataFetch {
         email: query.email,
         appId: query.appId,
         paginated: query.paginated,
+        paginated: query.paginated,
+        includeDeactivated: query.includeDeactivated,
       })
       return {
         rows: res?.data || [],

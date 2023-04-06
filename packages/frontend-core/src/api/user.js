@@ -14,8 +14,15 @@ export const buildUserEndpoints = API => ({
    * @param {string} search The starts with string to search username/email by.
    * @param {string} appId Facilitate app/role based user searching
    * @param {boolean} paginated Allow the disabling of pagination
+   * @param {boolean} includeDeactivated Return both active and deactivated users
    */
-  searchUsers: async ({ paginated, page, email, appId } = {}) => {
+  searchUsers: async ({
+    paginated,
+    page,
+    email,
+    appId,
+    includeDeactivated,
+  } = {}) => {
     const opts = {}
     if (page) {
       opts.page = page
@@ -29,6 +36,10 @@ export const buildUserEndpoints = API => ({
     if (typeof paginated === "boolean") {
       opts.paginated = paginated
     }
+    if (includeDeactivated) {
+      opts.includeDeactivated = true
+    }
+    includeDeactivated
     return await API.post({
       url: `/api/global/users/search`,
       body: opts,

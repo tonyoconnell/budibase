@@ -212,6 +212,7 @@ export const search = async (
     const users = await userSdk.core.findUsers({
       bookmark: body.page,
       filters,
+      includeInactive: body.includeDeactivated,
     })
     const result: SearchUsersResponse = {
       data: users.rows,
