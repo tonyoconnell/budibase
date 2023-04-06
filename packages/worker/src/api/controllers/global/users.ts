@@ -203,7 +203,7 @@ export const search = async (
   } else {
     const filters: FindUsersFilters = {}
     if (body.email) {
-      filters.equal = { email: body.email }
+      filters.contains = { email: body.email }
     }
     if (body.appId) {
       filters.noEmpty = [`roles.${body.appId}`]

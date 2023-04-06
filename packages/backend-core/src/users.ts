@@ -271,6 +271,10 @@ export const findUsers = async (params?: {
     builder.addNotEmpty(key, true)
   }
 
+  for (const [key, value] of Object.entries(params?.filters?.contains ?? {})) {
+    builder.addString(key, value)
+  }
+
   if (!params?.includeInactive) {
     builder.addEqual("status", UserStatus.ACTIVE)
   }

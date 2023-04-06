@@ -63,6 +63,7 @@ export interface SearchUsersResponse {
 
 export interface FindUsersFilters {
   equal?: Record<string, any>
+  contains?: Record<string, any>
   noEmpty?: string[]
 }
 
