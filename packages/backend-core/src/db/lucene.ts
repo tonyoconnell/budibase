@@ -1,18 +1,13 @@
 import fetch from "node-fetch"
 import { getCouchInfo } from "./couch"
 import { SearchFilters, Row } from "@budibase/types"
-import { createUserIndex } from "./searchIndexes/searchIndexes"
 
 const QUERY_START_REGEX = /\d[0-9]*:/g
 
-interface SearchResponse<T> {
+export interface SearchResponse<T> {
   rows: T[] | any[]
   bookmark?: string
   totalRows: number
-}
-
-interface PaginatedSearchResponse<T> extends SearchResponse<T> {
-  hasNextPage: boolean
 }
 
 export type SearchParams<T> = {

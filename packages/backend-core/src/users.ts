@@ -10,8 +10,15 @@ import {
   directCouchFind,
   getGlobalUserParams,
   pagination,
+  QueryBuilder,
+  searchIndexes,
 } from "./db"
-import { BulkDocsResponse, SearchUsersRequest, User } from "@budibase/types"
+import {
+  BulkDocsResponse,
+  SearchIndex,
+  SearchUsersRequest,
+  User,
+} from "@budibase/types"
 import { getGlobalDB } from "./context"
 import * as context from "./context"
 
@@ -238,4 +245,27 @@ export const paginatedUsers = async ({
     property,
     getKey,
   })
+}
+
+export const findUsers = async (params?: {
+  limit?: number
+  skip?: number
+  sort?: string
+  filters?: Record<string, any>
+}) => {
+  const db = getGlobalDB()
+
+  const builder = new QueryBuilder<User>(db.name, SearchIndex.USER)
+  builder.setIndexBuilder(searchIndexes.createUserIndex)
+  builder.setLimit(params?.limit)
+
+  for (const [key, value] of Object.entries(params?.filters?.equal ?? {})) {
+    builder.addEqual(key, value)
+  }
+
+  builder.setSort(params?.sort || "_id")
+  builder.setSkip(params?.skip)
+
+  const docs = await builder.run()
+  return docs
 }
