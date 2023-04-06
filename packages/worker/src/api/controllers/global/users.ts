@@ -14,11 +14,13 @@ import {
   CreateAdminUserRequest,
   CreateAdminUserResponse,
   Ctx,
+  FindUsersFilters,
   InviteUserRequest,
   InviteUsersRequest,
   MigrationType,
   SaveUserResponse,
   SearchUsersRequest,
+  SearchUsersResponse,
   User,
   UserCtx,
 } from "@budibase/types"
@@ -191,20 +193,36 @@ export const getAppUsers = async (ctx: any) => {
   ctx.body = { data: users }
 }
 
-export const search = async (ctx: any) => {
-  const body = ctx.request.body as SearchUsersRequest
+export const search = async (
+  ctx: Ctx<SearchUsersRequest, SearchUsersResponse>
+) => {
+  const body = ctx.request.body
 
   if (body.paginated === false) {
     await getAppUsers(ctx)
   } else {
-    const paginated = await userSdk.core.paginatedUsers(body)
-    // user hashed password shouldn't ever be returned
-    for (let user of paginated.data) {
-      if (user) {
-        delete user.password
-      }
+    const filters: FindUsersFilters = {}
+    if (body.email) {
+      filters.equal = { email: body.email }
     }
-    ctx.body = paginated
+    if (body.appId) {
+      filters.noEmpty = [`roles.${body.appId}`]
+    }
+
+    const users = await userSdk.core.findUsers({
+      bookmark: body.page,
+      filters,
+    })
+    const result: SearchUsersResponse = {
+      data: users.rows,
+      hasNextPage: !!users.bookmark,
+      nextPage: users.bookmark,
+    }
+
+    for (let user of result.data) {
+      delete user.password
+    }
+    ctx.body = result
   }
 }
 

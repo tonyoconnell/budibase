@@ -15,9 +15,11 @@ import {
 } from "./db"
 import {
   BulkDocsResponse,
+  FindUsersFilters,
   SearchIndex,
   SearchUsersRequest,
   User,
+  UserStatus,
 } from "@budibase/types"
 import { getGlobalDB } from "./context"
 import * as context from "./context"
@@ -250,17 +252,27 @@ export const paginatedUsers = async ({
 export const findUsers = async (params?: {
   limit?: number
   skip?: number
+  bookmark?: string
   sort?: string
-  filters?: Record<string, any>
+  filters?: FindUsersFilters
+  includeInactive?: boolean
 }) => {
   const db = getGlobalDB()
 
   const builder = new QueryBuilder<User>(db.name, SearchIndex.USER)
   builder.setIndexBuilder(searchIndexes.createUserIndex)
   builder.setLimit(params?.limit)
+  builder.setBookmark(params?.bookmark)
 
   for (const [key, value] of Object.entries(params?.filters?.equal ?? {})) {
     builder.addEqual(key, value)
+  }
+  for (const key of params?.filters?.noEmpty || []) {
+    builder.addNotEmpty(key, true)
+  }
+
+  if (!params?.includeInactive) {
+    builder.addEqual("status", UserStatus.ACTIVE)
   }
 
   builder.setSort(params?.sort || "_id")

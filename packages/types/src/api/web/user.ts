@@ -53,6 +53,17 @@ export interface SearchUsersRequest {
   paginated?: boolean
 }
 
+export interface SearchUsersResponse {
+  data: User[]
+  hasNextPage: boolean
+  nextPage: string | undefined
+}
+
+export interface FindUsersFilters {
+  equal?: Record<string, any>
+  noEmpty?: string[]
+}
+
 export interface CreateAdminUserRequest {
   email: string
   password: string

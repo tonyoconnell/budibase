@@ -5,7 +5,7 @@ import { SearchFilters, Row } from "@budibase/types"
 const QUERY_START_REGEX = /\d[0-9]*:/g
 
 export interface SearchResponse<T> {
-  rows: T[] | any[]
+  rows: T[]
   bookmark?: string
   totalRows: number
 }
