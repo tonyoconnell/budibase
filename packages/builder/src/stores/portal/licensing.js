@@ -13,9 +13,12 @@ export const createLicensingStore = () => {
     license: undefined,
     isFreePlan: true,
     isEnterprisePlan: true,
+    isBusinessPlan: true,
     // features
     groupsEnabled: false,
     backupsEnabled: false,
+    brandingEnabled: false,
+    scimEnabled: false,
     // the currently used quotas from the db
     quotaUsage: undefined,
     // derived quota metrics for percentages used
@@ -57,19 +60,23 @@ export const createLicensingStore = () => {
       const planType = license?.plan.type
       const isEnterprisePlan = planType === Constants.PlanType.ENTERPRISE
       const isFreePlan = planType === Constants.PlanType.FREE
+      const isBusinessPlan = planType === Constants.PlanType.BUSINESS
       const groupsEnabled = license.features.includes(
         Constants.Features.USER_GROUPS
       )
       const backupsEnabled = license.features.includes(
         Constants.Features.BACKUPS
       )
+      const scimEnabled = license.features.includes(Constants.Features.SCIM)
       const environmentVariablesEnabled = license.features.includes(
         Constants.Features.ENVIRONMENT_VARIABLES
       )
       const enforceableSSO = license.features.includes(
         Constants.Features.ENFORCEABLE_SSO
       )
-
+      const brandingEnabled = license.features.includes(
+        Constants.Features.BRANDING
+      )
       const auditLogsEnabled = license.features.includes(
         Constants.Features.AUDIT_LOGS
       )
@@ -79,8 +86,11 @@ export const createLicensingStore = () => {
           license,
           isEnterprisePlan,
           isFreePlan,
+          isBusinessPlan,
           groupsEnabled,
           backupsEnabled,
+          brandingEnabled,
+          scimEnabled,
           environmentVariablesEnabled,
           auditLogsEnabled,
           enforceableSSO,

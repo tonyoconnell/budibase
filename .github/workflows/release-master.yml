@@ -107,7 +107,7 @@ jobs:
           git pull
           mkdir sync
           echo "Packaging chart to sync dir"
-          helm package charts/budibase --version 0.0.0-master --app-version "$RELEASE_VERSION" --destination sync
+          helm package charts/budibase --version 0.0.0-master --app-version v"$RELEASE_VERSION" --destination sync
           echo "Packaging successful"
           git checkout gh-pages
           echo "Indexing helm repo"         
@@ -134,6 +134,7 @@ jobs:
       - name: Get the latest budibase release version
         id: version
         run: |
+          git pull
           release_version=$(cat lerna.json | jq -r '.version')
           echo "RELEASE_VERSION=$release_version" >> $GITHUB_ENV
 
