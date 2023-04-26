@@ -142,10 +142,3 @@ export interface DatasourcePlus extends IntegrationBase {
   getStringConcat(parts: string[]): string
   buildSchema(datasourceId: string, entities: Record<string, Table>): any
 }
-
-export interface DatasourcePlusWrapper extends IntegrationBase {
-  tables: Record<string, Table>
-  schemaErrors: Record<string, string>
-
-  buildSchema(datasourceId: string, entities: Record<string, Table>): any
-}

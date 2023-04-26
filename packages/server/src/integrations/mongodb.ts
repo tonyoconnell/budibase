@@ -1,11 +1,10 @@
 import {
   Integration,
+  IntegrationBase,
   DatasourceFieldType,
   QueryType,
   QueryJson,
-  DatasourcePlusWrapper,
   Operation,
-  Table,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -349,11 +348,9 @@ const getSchema = () => {
 
 const SCHEMA: Integration = getSchema()
 
-class MongoIntegration implements DatasourcePlusWrapper {
+class MongoIntegration implements IntegrationBase {
   private config: MongoDBConfig
   private client: any
-  public tables: Record<string, Table> = {}
-  public schemaErrors: Record<string, string> = {}
 
   constructor(config: MongoDBConfig) {
     this.config = config
@@ -435,10 +432,6 @@ class MongoIntegration implements DatasourcePlusWrapper {
       filter: group1,
       options: group2,
     }
-  }
-
-  async buildSchema(datasourceId: string, entities: Record<string, Table>) {
-    this.tables = entities
   }
 
   async create(query: MongoDBQuery) {

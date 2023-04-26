@@ -39,6 +39,7 @@
       primary: ["id"],
       sourceId: datasourceId,
       schema: readQuery.schema,
+      queries: queryList,
     }
   }
 
@@ -46,7 +47,6 @@
     try {
       submitted = true
       const table = await tables.save(buildTable(name, datasource._id))
-      await datasources.updateSchema(datasource)
       await datasources.fetch()
       $goto(`../../table/${table._id}`)
     } catch (error) {

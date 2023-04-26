@@ -11,6 +11,7 @@ export interface Datasource extends Document {
     [key: string]: string | number | boolean | any[]
   }
   plus?: boolean
+  plusWrapper?: boolean
   entities?: {
     [key: string]: Table
   }

@@ -2,6 +2,7 @@ import { Document } from "../document"
 import { View } from "./view"
 import { RenameColumn } from "../../sdk"
 import { FieldType } from "./row"
+import { Query } from "./query"
 
 export enum RelationshipTypes {
   ONE_TO_MANY = "one-to-many",
@@ -80,6 +81,7 @@ export interface Table extends Document {
   rows?: { [key: string]: any }
   created?: boolean
   rowHeight?: number
+  queries?: Query[]
 }
 
 export interface TableRequest extends Table {

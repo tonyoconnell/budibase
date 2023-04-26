@@ -9,6 +9,8 @@ import { quotas } from "@budibase/pro"
 import { events, context, utils, constants } from "@budibase/backend-core"
 import sdk from "../../../sdk"
 import { QueryEvent } from "../../../threads/definitions"
+import { Query } from "@budibase/types"
+import { getAppId } from "@budibase/backend-core/src/context"
 
 const Runner = new Thread(ThreadType.QUERY, {
   timeoutMs: env.QUERY_THREAD_TIMEOUT || 10000,
@@ -202,13 +204,14 @@ export async function preview(ctx: any) {
 
 async function execute(
   ctx: any,
-  opts: any = { rowsOnly: false, isAutomation: false }
+  opts: any = { rowsOnly: false, isAutomation: false },
+  query?: Query
 ) {
   const db = context.getAppDB()
 
-  const query = await db.get(ctx.params.queryId)
+  query = query || (await db.get(ctx.params.queryId))
   const { datasource, envVars } = await sdk.datasources.getWithEnvVars(
-    query.datasourceId
+    query!.datasourceId
   )
 
   let authConfigCtx: any = {}
@@ -228,13 +231,13 @@ async function execute(
   // call the relevant CRUD method on the integration class
   try {
     const inputs: QueryEvent = {
-      appId: ctx.appId,
+      appId: ctx.appId || getAppId(),
       datasource,
-      queryVerb: query.queryVerb,
-      fields: query.fields,
+      queryVerb: query!.queryVerb,
+      fields: query!.fields,
       pagination: ctx.request.body.pagination,
       parameters: enrichedParameters,
-      transformer: query.transformer,
+      transformer: query!.transformer,
       queryId: ctx.params.queryId,
       // have to pass down to the thread runner - can't put into context now
       environmentVariables: envVars,
@@ -268,9 +271,10 @@ export async function executeV1(ctx: any) {
 
 export async function executeV2(
   ctx: any,
+  query?: Query,
   { isAutomation }: { isAutomation?: boolean } = {}
 ) {
-  return execute(ctx, { rowsOnly: false, isAutomation })
+  return execute(ctx, { rowsOnly: false, isAutomation }, query)
 }
 
 const removeDynamicVariables = async (queryId: any) => {
