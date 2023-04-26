@@ -104,7 +104,7 @@
         bind:datasource
         on:valid={e => (isValid = e.detail)}
       />
-      {#if datasource.plus}
+      {#if datasource.plus || datasource.plusWrapper}
         <PlusConfigForm bind:datasource save={saveDatasource} />
       {/if}
       <Divider />

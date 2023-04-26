@@ -111,6 +111,7 @@ export interface DatasourceConfig {
 export interface Integration {
   docs: string
   plus?: boolean
+  plusWrapper?: boolean
   auth?: { type: string }
   relationships?: boolean
   description: string
@@ -140,4 +141,11 @@ export interface DatasourcePlus extends IntegrationBase {
   getBindingIdentifier(): string
   getStringConcat(parts: string[]): string
   buildSchema(datasourceId: string, entities: Record<string, Table>): any
+}
+
+export interface DatasourcePlusWrapper extends IntegrationBase {
+  tables: Record<string, Table>
+  idFieldName: string
+
+  createTableView(datasourceId: string, entities: Record<string, Table>): any
 }

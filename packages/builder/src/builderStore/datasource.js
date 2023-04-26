@@ -18,6 +18,7 @@ function prepareData(config) {
   datasource.config = config.config
   datasource.name = name
   datasource.plus = config.plus
+  datasource.plusWrapper = config.plusWrapper
 
   return datasource
 }
