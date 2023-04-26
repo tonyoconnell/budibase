@@ -43,6 +43,12 @@
   $: relationships = getRelationships(plusTables)
   $: schemaError = $datasources.schemaError
   $: relationshipInfo = relationshipTableData(relationships)
+  $: datasourceInfoMessage = datasource?.plusWrapper
+    ? `Create read/write table interfaces for this datasource. 
+    You must have a correclty configured query for each for the CRUD operations (Create, Read, Update, Delete).`
+    : `This datasource can determine tables automatically. Budibase can fetch your
+  tables directly from the database and you can use them without having to write
+  any queries at all.`
 
   function getRelationships(tables) {
     if (!tables || !Array.isArray(tables)) {
@@ -176,16 +182,16 @@
 <div class="query-header">
   <Heading size="S">Tables</Heading>
   <div class="table-buttons">
-    <Button secondary on:click={() => confirmDialog.show()}>
-      Fetch tables
-    </Button>
+    {#if datasource?.plus}
+      <Button secondary on:click={() => confirmDialog.show()}>
+        Fetch tables
+      </Button>
+    {/if}
     <Button cta icon="Add" on:click={createNewTable}>New table</Button>
   </div>
 </div>
 <Body>
-  This datasource can determine tables automatically. Budibase can fetch your
-  tables directly from the database and you can use them without having to write
-  any queries at all.
+  {datasourceInfoMessage}
 </Body>
 {#if schemaError}
   <InlineAlert

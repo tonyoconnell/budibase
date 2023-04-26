@@ -37,6 +37,7 @@ const getSchema = () => {
     friendlyName: "MongoDB",
     type: "Non-relational",
     plusWrapper: true,
+    relationships: false,
     description:
       "MongoDB is a general purpose, document-based, distributed database built for modern application developers and for the cloud era.",
     datasource: {
