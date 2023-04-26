@@ -105,7 +105,7 @@
         on:valid={e => (isValid = e.detail)}
       />
       {#if datasource.plus || datasource.plusWrapper}
-        <PlusConfigForm bind:datasource save={saveDatasource} />
+        <PlusConfigForm bind:datasource save={saveDatasource} {queryList} />
       {/if}
       <Divider />
       <div class="query-header">

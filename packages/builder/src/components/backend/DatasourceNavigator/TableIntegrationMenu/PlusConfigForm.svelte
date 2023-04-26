@@ -13,6 +13,7 @@
   import { datasources, integrations, tables } from "stores/backend"
   import CreateEditRelationship from "components/backend/Datasources/CreateEditRelationship.svelte"
   import CreateExternalTableModal from "./CreateExternalTableModal.svelte"
+  import CreateCustomExternalTableModal from "./CreateCustomExternalTableModal.svelte"
   import ArrayRenderer from "components/common/renderers/ArrayRenderer.svelte"
   import ConfirmDialog from "components/common/ConfirmDialog.svelte"
   import { goto } from "@roxi/routify"
@@ -20,6 +21,7 @@
 
   export let datasource
   export let save
+  export let queryList
 
   let tableSchema = {
     name: {},
@@ -30,7 +32,7 @@
     columns: {},
   }
   let relationshipModal
-  let createExternalTableModal
+  let createExternalTableModal, createCustomExternalTableModal
   let selectedFromRelationship, selectedToRelationship
   let confirmDialog
   let specificTables = null
@@ -120,7 +122,11 @@
   }
 
   function createNewTable() {
-    createExternalTableModal.show()
+    if (datasource.plusWrapper) {
+      createCustomExternalTableModal.show()
+    } else {
+      createExternalTableModal.show()
+    }
   }
 
   function relationshipTableData(relations) {
@@ -147,9 +153,15 @@
   />
 </Modal>
 
-<Modal bind:this={createExternalTableModal}>
-  <CreateExternalTableModal {datasource} />
-</Modal>
+{#if datasource.plusWrapper}
+  <Modal bind:this={createCustomExternalTableModal}>
+    <CreateCustomExternalTableModal {datasource} {queryList} />
+  </Modal>
+{:else}
+  <Modal bind:this={createExternalTableModal}>
+    <CreateExternalTableModal {datasource} />
+  </Modal>
+{/if}
 
 <ConfirmDialog
   bind:this={confirmDialog}
