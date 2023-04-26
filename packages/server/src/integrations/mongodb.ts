@@ -2,7 +2,10 @@ import {
   Integration,
   DatasourceFieldType,
   QueryType,
-  IntegrationBase,
+  QueryJson,
+  DatasourcePlusWrapper,
+  Operation,
+  Table,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -346,9 +349,11 @@ const getSchema = () => {
 
 const SCHEMA: Integration = getSchema()
 
-class MongoIntegration implements IntegrationBase {
+class MongoIntegration implements DatasourcePlusWrapper {
   private config: MongoDBConfig
   private client: any
+  public tables: Record<string, Table> = {}
+  public schemaErrors: Record<string, string> = {}
 
   constructor(config: MongoDBConfig) {
     this.config = config
@@ -430,6 +435,10 @@ class MongoIntegration implements IntegrationBase {
       filter: group1,
       options: group2,
     }
+  }
+
+  async buildSchema(datasourceId: string, entities: Record<string, Table>) {
+    this.tables = entities
   }
 
   async create(query: MongoDBQuery) {
@@ -630,6 +639,18 @@ class MongoIntegration implements IntegrationBase {
       throw err
     } finally {
       await this.client.close()
+    }
+  }
+
+  async query(json: QueryJson) {
+    const operation = json.endpoint.operation
+    switch (operation) {
+      case Operation.CREATE_TABLE:
+      case Operation.UPDATE_TABLE:
+      case Operation.DELETE_TABLE:
+        break
+      default:
+        throw `Operation type is not supported by SQL query builder`
     }
   }
 }

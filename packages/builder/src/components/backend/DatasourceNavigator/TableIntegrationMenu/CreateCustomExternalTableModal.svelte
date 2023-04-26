@@ -12,8 +12,6 @@
   export let datasource
   export let queryList = []
 
-  $: console.log("Queries ", queryList)
-
   let name = ""
   let readQuery, idFieldName
   let submitted = false
@@ -28,31 +26,27 @@
       ? "Table name already in use."
       : null
   $: readQueryOptions = queryList
-    .filter(query => query.readable)
+    .filter(query => query.readable || query.queryVerb === "read")
     .map(query => ({
       label: query.name,
       value: query,
     }))
 
-  function buildDefaultTable(tableName, datasourceId) {
+  function buildTable(tableName, datasourceId) {
     return {
       name: tableName,
       type: "external",
       primary: ["id"],
       sourceId: datasourceId,
-      schema: {
-        id: {
-          autocolumn: true,
-          type: "number",
-        },
-      },
+      schema: readQuery.schema,
     }
   }
 
   async function saveTable() {
     try {
       submitted = true
-      const table = await tables.save(buildDefaultTable(name, datasource._id))
+      const table = await tables.save(buildTable(name, datasource._id))
+      await datasources.updateSchema(datasource)
       await datasources.fetch()
       $goto(`../../table/${table._id}`)
     } catch (error) {

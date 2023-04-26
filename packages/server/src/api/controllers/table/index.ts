@@ -31,7 +31,7 @@ export async function fetch(ctx: UserCtx) {
   const internal = await sdk.tables.getAllInternalTables()
 
   const externalTables = await db.allDocs(
-    getDatasourceParams("plus", {
+    getDatasourceParams(null, {
       include_docs: true,
     })
   )
