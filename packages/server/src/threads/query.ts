@@ -103,7 +103,7 @@ class QueryRunner {
 
     let output
     if (
-      datasource.plusWrapper &&
+      datasource.customPlus &&
       queryVerb === "read" &&
       Object.keys(parameters).length > 0
     ) {

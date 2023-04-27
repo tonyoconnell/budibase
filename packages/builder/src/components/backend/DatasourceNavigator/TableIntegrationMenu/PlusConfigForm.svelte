@@ -45,7 +45,7 @@
   $: relationships = getRelationships(plusTables)
   $: schemaError = $datasources.schemaError
   $: relationshipInfo = relationshipTableData(relationships)
-  $: datasourceInfoMessage = datasource?.plusWrapper
+  $: datasourceInfoMessage = datasource?.customPlus
     ? `Create read/write table interfaces for this datasource. 
     You must have a correclty configured query for each for the CRUD operations (Create, Read, Update, Delete).`
     : `This datasource can determine tables automatically. Budibase can fetch your
@@ -122,7 +122,7 @@
   }
 
   function createNewTable() {
-    if (datasource.plusWrapper) {
+    if (datasource.customPlus) {
       createCustomExternalTableModal.show()
     } else {
       createExternalTableModal.show()
@@ -153,7 +153,7 @@
   />
 </Modal>
 
-{#if datasource.plusWrapper}
+{#if datasource.customPlus}
   <Modal bind:this={createCustomExternalTableModal}>
     <CreateCustomExternalTableModal {datasource} {queryList} />
   </Modal>

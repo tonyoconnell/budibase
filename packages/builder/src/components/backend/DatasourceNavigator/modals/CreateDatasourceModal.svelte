@@ -50,7 +50,7 @@
     integration = {
       type: integrationType,
       plus: selected.plus,
-      plusWrapper: selected.plusWrapper,
+      customPlus: selected.customPlus,
       config,
       schema: selected.datasource,
       auth: selected.auth,

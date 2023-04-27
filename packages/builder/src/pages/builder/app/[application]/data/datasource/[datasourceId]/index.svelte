@@ -104,7 +104,7 @@
         bind:datasource
         on:valid={e => (isValid = e.detail)}
       />
-      {#if datasource.plus || datasource.plusWrapper}
+      {#if datasource.plus || datasource.customPlus}
         <PlusConfigForm bind:datasource save={saveDatasource} {queryList} />
       {/if}
       <Divider />

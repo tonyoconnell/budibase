@@ -111,7 +111,7 @@ export interface DatasourceConfig {
 export interface Integration {
   docs: string
   plus?: boolean
-  plusWrapper?: boolean
+  customPlus?: boolean
   auth?: { type: string }
   relationships?: boolean
   description: string
@@ -143,7 +143,6 @@ export interface DatasourcePlus extends IntegrationBase {
   buildSchema(datasourceId: string, entities: Record<string, Table>): any
 }
 
-export interface DatasourcePlusWrapper extends IntegrationBase {
-  read(query: any): Promise<any[] | any>
+export interface CustomDatasourcePlus extends IntegrationBase {
   filter(originalQuery: any, filter: any): Promise<any[] | any>
 }

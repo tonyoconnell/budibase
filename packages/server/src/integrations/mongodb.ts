@@ -2,7 +2,7 @@ import {
   Integration,
   DatasourceFieldType,
   QueryType,
-  DatasourcePlusWrapper,
+  CustomDatasourcePlus,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -36,7 +36,7 @@ const getSchema = () => {
     docs: "https://github.com/mongodb/node-mongodb-native",
     friendlyName: "MongoDB",
     type: "Non-relational",
-    plusWrapper: true,
+    customPlus: true,
     relationships: false,
     description:
       "MongoDB is a general purpose, document-based, distributed database built for modern application developers and for the cloud era.",
@@ -346,7 +346,7 @@ const getSchema = () => {
 
 const SCHEMA: Integration = getSchema()
 
-class MongoIntegration implements DatasourcePlusWrapper {
+class MongoIntegration implements CustomDatasourcePlus {
   private config: MongoDBConfig
   private client: any
 

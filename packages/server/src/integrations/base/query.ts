@@ -9,7 +9,7 @@ export async function makeExternalQuery(
 ) {
   datasource = await sdk.datasources.enrich(datasource)
   const Integration = await getIntegration(datasource.source)
-  if (datasource.plusWrapper) {
+  if (datasource.customPlus) {
     const operation = json.endpoint.operation
     switch (operation) {
       case Operation.CREATE_TABLE:
@@ -22,7 +22,7 @@ export async function makeExternalQuery(
       throw `Custom datasource does not support ${operation.toLowerCase()}.`
     }
     let parameters = json.body
-    if (operation === Operation.READ) {
+    if (operation !== Operation.CREATE) {
       //Append filters to request parameters
       for (let entry of Object.entries(json.filters?.equal || {})) {
         let fieldName = entry[0].substring(entry[0].indexOf(":") + 1)
@@ -46,9 +46,11 @@ export async function makeExternalQuery(
     await executeV2(ctx, query, {
       isAutomation: true,
     })
-    if (operation !== Operation.READ) {
+    if (operation === Operation.CREATE) {
       //Return the input for CREATE to make sure the _id is assigned
       return [json.body]
+    } else if (operation === Operation.DELETE) {
+      return []
     }
     return ctx.body.data
   } else if (Integration.prototype.query) {
