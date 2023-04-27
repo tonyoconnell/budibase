@@ -9,13 +9,23 @@ export async function makeExternalQuery(
 ) {
   datasource = await sdk.datasources.enrich(datasource)
   const Integration = await getIntegration(datasource.source)
-  if (datasource.plusWrapper && json.endpoint.operation === Operation.READ) {
-    const query = json.meta?.table?.queries?.find(
-      query => query.queryVerb === json.endpoint.operation.toLowerCase()
-    )
+  if (datasource.plusWrapper) {
+    const operation = json.endpoint.operation
+    switch (operation) {
+      case Operation.CREATE_TABLE:
+      case Operation.UPDATE_TABLE:
+      case Operation.DELETE_TABLE:
+        return
+    }
+    const query = json.meta?.table?.queries?.[operation.toLowerCase()]
+    if (!query) {
+      throw `Custom datasource does not support ${operation.toLowerCase()}.`
+    }
     let ctx = {
       request: {
-        body: {},
+        body: {
+          parameters: json.body,
+        },
       },
       body: {
         data: {},
@@ -25,6 +35,10 @@ export async function makeExternalQuery(
     await executeV2(ctx, query, {
       isAutomation: true,
     })
+    if (operation !== Operation.READ) {
+      //Return the input for CREATE to make sure the _id is assigned
+      return [json.body]
+    }
     return ctx.body.data
   } else if (Integration.prototype.query) {
     const integration = new Integration(datasource.config)

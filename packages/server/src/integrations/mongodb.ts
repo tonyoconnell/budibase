@@ -634,18 +634,6 @@ class MongoIntegration implements IntegrationBase {
       await this.client.close()
     }
   }
-
-  async query(json: QueryJson) {
-    const operation = json.endpoint.operation
-    switch (operation) {
-      case Operation.CREATE_TABLE:
-      case Operation.UPDATE_TABLE:
-      case Operation.DELETE_TABLE:
-        break
-      default:
-        throw `Operation type is not supported by SQL query builder`
-    }
-  }
 }
 
 export default {

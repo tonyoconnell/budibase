@@ -81,7 +81,7 @@ export interface Table extends Document {
   rows?: { [key: string]: any }
   created?: boolean
   rowHeight?: number
-  queries?: Query[]
+  queries?: Record<string, Query>
 }
 
 export interface TableRequest extends Table {

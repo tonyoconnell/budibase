@@ -11,22 +11,38 @@
 
   export let datasource
   export let queryList = []
+  let queries = {}
 
   let name = ""
-  let readQuery, idFieldName
+  let idFieldName
   let submitted = false
   $: valid =
-    name &&
-    name.length > 0 &&
-    !datasource?.entities?.[name] &&
-    readQuery &&
-    idFieldName
+    name && name.length > 0 && !datasource?.entities?.[name] && queries.read
   $: error =
     !submitted && name && datasource?.entities?.[name]
       ? "Table name already in use."
       : null
+
+  $: createQueryOptions = queryList
+    .filter(query => query.queryVerb === "create")
+    .map(query => ({
+      label: query.name,
+      value: query,
+    }))
   $: readQueryOptions = queryList
     .filter(query => query.readable || query.queryVerb === "read")
+    .map(query => ({
+      label: query.name,
+      value: query,
+    }))
+  $: updateQueryOptions = queryList
+    .filter(query => query.queryVerb === "update")
+    .map(query => ({
+      label: query.name,
+      value: query,
+    }))
+  $: deleteQueryOptions = queryList
+    .filter(query => query.queryVerb === "delete")
     .map(query => ({
       label: query.name,
       value: query,
@@ -38,8 +54,8 @@
       type: "external",
       primary: ["id"],
       sourceId: datasourceId,
-      schema: readQuery.schema,
-      queries: queryList,
+      schema: queries.read.schema,
+      queries,
     }
   }
 
@@ -63,21 +79,42 @@
   onConfirm={saveTable}
   disabled={!valid}
 >
-  <Body>Provide the details for your new table.</Body>
+  <Body>Set the queries for your new table.</Body>
   <Input label="Table Name" bind:error bind:value={name} />
   <Select
-    bind:value={readQuery}
+    bind:value={queries.create}
+    secondary
+    extraThin
+    label="CREATE Query"
+    options={createQueryOptions}
+  />
+  <Select
+    bind:value={queries.read}
     secondary
     extraThin
     label="READ Query"
     options={readQueryOptions}
   />
   <Select
+    bind:value={queries.update}
+    secondary
+    extraThin
+    label="UPDATE Query"
+    options={updateQueryOptions}
+  />
+  <Select
+    bind:value={queries.delete}
+    secondary
+    extraThin
+    label="DELETE Query"
+    options={deleteQueryOptions}
+  />
+  <!-- <Select
     bind:value={idFieldName}
     disabled={!readQuery}
     secondary
     extraThin
     label="ID Field"
     options={Object.keys(readQuery?.schema ?? {})}
-  />
+  /> -->
 </ModalContent>

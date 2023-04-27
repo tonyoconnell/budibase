@@ -80,7 +80,7 @@ export async function run({ inputs, appId, emitter }: AutomationStepInput) {
   })
 
   try {
-    await queryController.executeV2(ctx, { isAutomation: true })
+    await queryController.executeV2(ctx, undefined, { isAutomation: true })
     const { data, ...rest } = ctx.body
 
     return {
