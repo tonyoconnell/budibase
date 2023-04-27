@@ -21,10 +21,21 @@ export async function makeExternalQuery(
     if (!query) {
       throw `Custom datasource does not support ${operation.toLowerCase()}.`
     }
+    let parameters = json.body
+    if (operation === Operation.READ) {
+      //Append filters to request parameters
+      for (let entry of Object.entries(json.filters?.equal || {})) {
+        let fieldName = entry[0].substring(entry[0].indexOf(":") + 1)
+        parameters = {
+          ...parameters,
+          [`${fieldName}`]: entry[1],
+        }
+      }
+    }
     let ctx = {
       request: {
         body: {
-          parameters: json.body,
+          parameters,
         },
       },
       body: {

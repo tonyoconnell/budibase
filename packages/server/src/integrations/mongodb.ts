@@ -1,10 +1,8 @@
 import {
   Integration,
-  IntegrationBase,
   DatasourceFieldType,
   QueryType,
-  QueryJson,
-  Operation,
+  DatasourcePlusWrapper,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -348,7 +346,7 @@ const getSchema = () => {
 
 const SCHEMA: Integration = getSchema()
 
-class MongoIntegration implements IntegrationBase {
+class MongoIntegration implements DatasourcePlusWrapper {
   private config: MongoDBConfig
   private client: any
 
@@ -462,6 +460,25 @@ class MongoIntegration implements IntegrationBase {
     } finally {
       await this.client.close()
     }
+  }
+
+  async filter(originalQuery: MongoDBQuery, filter: any) {
+    let updatedJson = originalQuery.json
+    if (!updatedJson) {
+      updatedJson = {
+        ...filter,
+      }
+    } else {
+      if (typeof updatedJson === "string") {
+        updatedJson = JSON.parse(updatedJson) as object
+      }
+      updatedJson = {
+        ...updatedJson,
+        ...filter,
+      }
+    }
+    originalQuery.json = updatedJson
+    return await this.read(originalQuery)
   }
 
   async read(query: MongoDBQuery) {

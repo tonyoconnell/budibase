@@ -101,7 +101,18 @@ class QueryRunner {
       query.paginationValues = this.pagination
     }
 
-    let output = threadUtils.formatResponse(await integration[queryVerb](query))
+    let output
+    if (
+      datasource.plusWrapper &&
+      queryVerb === "read" &&
+      Object.keys(parameters).length > 0
+    ) {
+      output = threadUtils.formatResponse(
+        await integration["filter"](query, parameters)
+      )
+    } else {
+      output = threadUtils.formatResponse(await integration[queryVerb](query))
+    }
     let rows = output,
       info = undefined,
       extra = undefined,

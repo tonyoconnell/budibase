@@ -142,3 +142,8 @@ export interface DatasourcePlus extends IntegrationBase {
   getStringConcat(parts: string[]): string
   buildSchema(datasourceId: string, entities: Record<string, Table>): any
 }
+
+export interface DatasourcePlusWrapper extends IntegrationBase {
+  read(query: any): Promise<any[] | any>
+  filter(originalQuery: any, filter: any): Promise<any[] | any>
+}
