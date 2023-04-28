@@ -4,6 +4,8 @@ import {
   QueryType,
   CustomDatasourcePlus,
   SearchParams,
+  PaginationRequest,
+  SortOrder,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -27,6 +29,7 @@ interface MongoDBConfig {
 
 interface MongoDBQuery {
   json: object | string
+  pagination: PaginationRequest | undefined
   extra: {
     [key: string]: string
   }
@@ -480,6 +483,7 @@ class MongoIntegration implements CustomDatasourcePlus {
       }
     }
     originalQuery.json = updatedJson
+    originalQuery.pagination = params.pagination
     return await this.read(originalQuery)
   }
 
@@ -492,6 +496,18 @@ class MongoIntegration implements CustomDatasourcePlus {
 
       switch (query.extra.actionType) {
         case "find": {
+          if (query.pagination?.sort?.column) {
+            return await collection
+              .find(json)
+              .sort({
+                [`${query.pagination.sort.column}`]:
+                  query.pagination?.sort?.order?.toLowerCase() ===
+                  SortOrder.ASCENDING
+                    ? 1
+                    : -1,
+              })
+              .toArray()
+          }
           return await collection.find(json).toArray()
         }
         case "findOne": {

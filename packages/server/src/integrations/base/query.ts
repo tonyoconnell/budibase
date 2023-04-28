@@ -26,24 +26,37 @@ export async function makeExternalQuery(
       throw `Custom datasource does not support ${operation.toLowerCase()}.`
     }
     let parameters = json.body
-    if (operation === Operation.READ) {
-      parameters = {
-        ...parameters,
-        filters: json.filters,
-      }
-      //TODO - nested for loop for all filter keys
-      //Remove numbering from filters
-      for (let filter of Object.entries(json.filters?.equal || {})) {
-        if (hasKeyNumbering(filter[0])) {
-          parameters.filters.equal[removeKeyNumbering(filter[0])] = filter[1]
-          delete parameters.filters.equal[filter[0]]
+    switch (operation) {
+      case Operation.READ:
+        parameters = {
+          ...parameters,
+          filters: json.filters,
+          pagination: {
+            sort: {
+              column: Object.entries(json.sort ?? {})[0][0],
+              order: Object.entries(json.sort ?? {})[0][1]?.direction,
+              type: Object.entries(json.sort ?? {})[0][1]?.type,
+            },
+          },
         }
-      }
-    } else if (operation !== Operation.CREATE) {
-      parameters = {
-        ...parameters,
-        ...json.filters?.equal,
-      }
+        //TODO - nested for loop for all filter keys
+        //Remove numbering from filters
+        for (let filter of Object.entries(json.filters?.equal || {})) {
+          if (hasKeyNumbering(filter[0])) {
+            parameters.filters.equal[removeKeyNumbering(filter[0])] = filter[1]
+            delete parameters.filters.equal[filter[0]]
+          }
+        }
+        break
+      case Operation.UPDATE:
+      case Operation.DELETE:
+        parameters = {
+          ...parameters,
+          ...json.filters?.equal,
+        }
+        break
+      default:
+        break
     }
     let ctx = {
       request: {
