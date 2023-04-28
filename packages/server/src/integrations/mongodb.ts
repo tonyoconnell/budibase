@@ -3,6 +3,7 @@ import {
   DatasourceFieldType,
   QueryType,
   CustomDatasourcePlus,
+  SearchParams,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -462,11 +463,12 @@ class MongoIntegration implements CustomDatasourcePlus {
     }
   }
 
-  async filter(originalQuery: MongoDBQuery, filter: any) {
+  async search(originalQuery: MongoDBQuery, params: SearchParams) {
+    //TODO - expand filters. Currently only handles equals
     let updatedJson = originalQuery.json
     if (!updatedJson) {
       updatedJson = {
-        ...filter,
+        ...params.filters?.equal,
       }
     } else {
       if (typeof updatedJson === "string") {
@@ -474,7 +476,7 @@ class MongoIntegration implements CustomDatasourcePlus {
       }
       updatedJson = {
         ...updatedJson,
-        ...filter,
+        ...params.filters?.equal,
       }
     }
     originalQuery.json = updatedJson

@@ -1,7 +1,6 @@
 import fetch from "node-fetch"
 import { getCouchInfo } from "./couch"
 import { SearchFilters, Row } from "@budibase/types"
-import { createUserIndex } from "./searchIndexes/searchIndexes"
 
 const QUERY_START_REGEX = /\d[0-9]*:/g
 
@@ -29,7 +28,7 @@ export type SearchParams<T> = {
 }
 
 export function removeKeyNumbering(key: any): string {
-  if (typeof key === "string" && key.match(QUERY_START_REGEX) != null) {
+  if (typeof key === "string" && hasKeyNumbering(key)) {
     const parts = key.split(":")
     // remove the number
     parts.shift()
@@ -37,6 +36,10 @@ export function removeKeyNumbering(key: any): string {
   } else {
     return key
   }
+}
+
+export function hasKeyNumbering(key: string): boolean {
+  return key.match(QUERY_START_REGEX) != null
 }
 
 /**

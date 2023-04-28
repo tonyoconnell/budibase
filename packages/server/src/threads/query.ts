@@ -108,7 +108,7 @@ class QueryRunner {
       Object.keys(parameters).length > 0
     ) {
       output = threadUtils.formatResponse(
-        await integration["filter"](query, parameters)
+        await integration["search"](query, parameters)
       )
     } else {
       output = threadUtils.formatResponse(await integration[queryVerb](query))

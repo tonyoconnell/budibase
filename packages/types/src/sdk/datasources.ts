@@ -1,4 +1,6 @@
+import { PaginationRequest } from "../api"
 import { Table } from "../documents"
+import { SearchFilters } from "./search"
 
 export const PASSWORD_REPLACEMENT = "--secret-value--"
 
@@ -143,6 +145,17 @@ export interface DatasourcePlus extends IntegrationBase {
   buildSchema(datasourceId: string, entities: Record<string, Table>): any
 }
 
+export interface SearchParams {
+  pagination?: PaginationRequest
+  filters?: SearchFilters
+}
+
 export interface CustomDatasourcePlus extends IntegrationBase {
-  filter(originalQuery: any, filter: any): Promise<any[] | any>
+  /**
+   * Performs an advanced read operation
+   *
+   * @param originalQuery The 'Read' query of the custom DS+
+   * @param params The filter and sort to be appended
+   */
+  search(originalQuery: any, params: SearchParams): Promise<any[] | any>
 }
