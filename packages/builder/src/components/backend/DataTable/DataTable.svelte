@@ -26,14 +26,21 @@
   $: id = $tables.selected?._id
   $: isUsersTable = id === TableNames.USERS
   $: isInternal = $tables.selected?.type !== "external"
+  $: isCustomPlus = $tables.selected?.customPlus
 </script>
 
 <div class="wrapper">
   <Grid
     {API}
     tableId={id}
-    allowAddRows={!isUsersTable}
-    allowDeleteRows={!isUsersTable}
+    allowAddRows={(!isUsersTable && !isCustomPlus) ||
+      $tables.selected?.queries?.create}
+    allowDeleteRows={(!isUsersTable && !isCustomPlus) ||
+      $tables.selected?.queries?.delete}
+    allowEditRows={(!isUsersTable && !isCustomPlus) ||
+      $tables.selected?.queries?.update}
+    allowAddColumns={!isCustomPlus}
+    allowEditColumns={!isCustomPlus}
     schemaOverrides={isUsersTable ? userSchemaOverrides : null}
     on:updatetable={e => tables.updateTable(e.detail)}
   >

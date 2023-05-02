@@ -60,6 +60,7 @@
       primary: [`${idField}`],
       sourceId: datasourceId,
       schema: queries.read.schema,
+      customPlus: true,
       queries,
     }
   }
