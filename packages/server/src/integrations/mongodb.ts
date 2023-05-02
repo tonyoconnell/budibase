@@ -444,24 +444,24 @@ class MongoIntegration implements CustomDatasourcePlus {
         mongoFilters[key] = value
       }
     }
+    function buildFilter(
+      searchFilter: any,
+      mongoKeyword: string,
+      mongoValue?: any
+    ) {
+      Object.entries(searchFilter || {})
+        .map(([key, value]) => ({
+          [`${key}`]: {
+            [`${mongoKeyword}`]: mongoValue ?? value,
+          },
+        }))
+        .forEach(filter => appendFilter(filter))
+    }
 
-    //Equals filter
-    Object.entries(searchFilters.equal || {})
-      .map(([key, value]) => ({
-        [`${key}`]: {
-          $eq: value,
-        },
-      }))
-      .forEach(filter => appendFilter(filter))
-
-    //Not equals filter
-    Object.entries(searchFilters.notEqual || {})
-      .map(([key, value]) => ({
-        [`${key}`]: {
-          $ne: value,
-        },
-      }))
-      .forEach(filter => appendFilter(filter))
+    buildFilter(searchFilters.equal, "$eq")
+    buildFilter(searchFilters.notEqual, "$ne")
+    buildFilter(searchFilters.empty, "$eq", "")
+    buildFilter(searchFilters.notEmpty, "$ne", "")
 
     return mongoFilters
   }
