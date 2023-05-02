@@ -121,19 +121,23 @@
   <p>
     Are you sure you wish to delete the table
     <b>{table.name}?</b>
-    The following will also be deleted:
+    {#if !table.customPlus}
+      The following will also be deleted:
+    {/if}
   </p>
-  <b>
-    <div class="delete-items">
-      {#each willBeDeleted as item}
-        <div>{item}</div>
-      {/each}
-    </div>
-  </b>
-  <p>
-    This action cannot be undone - to continue please enter the table name below
-    to confirm.
-  </p>
+  {#if !table.customPlus}
+    <b>
+      <div class="delete-items">
+        {#each willBeDeleted as item}
+          <div>{item}</div>
+        {/each}
+      </div>
+    </b>
+    <p>
+      This action cannot be undone - to continue please enter the table name
+      below to confirm.
+    </p>
+  {/if}
   <Input bind:value={deleteTableName} placeholder={table.name} />
 </ConfirmDialog>
 

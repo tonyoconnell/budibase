@@ -32,6 +32,8 @@ export async function makeExternalQuery(
           ...parameters,
           filters: json.filters,
           pagination: {
+            limit: json.paginate?.limit,
+            bookmark: json.paginate?.page,
             sort: {
               column: Object.entries(json.sort ?? {})[0]?.[0],
               order: Object.entries(json.sort ?? {})[0]?.[1]?.direction,

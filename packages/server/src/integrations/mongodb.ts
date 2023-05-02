@@ -523,6 +523,9 @@ class MongoIntegration implements CustomDatasourcePlus {
 
       switch (query.extra.actionType) {
         case "find": {
+          let bookmark = parseInt(query.pagination?.bookmark ?? "1")
+          const page = bookmark <= 1 ? 0 : bookmark - 1
+          const offset = page * (query.pagination?.limit || 1)
           if (query.pagination?.sort?.column) {
             return await collection
               .find(json)
@@ -533,7 +536,11 @@ class MongoIntegration implements CustomDatasourcePlus {
                     ? 1
                     : -1,
               })
+              .skip(offset)
+              .limit(100)
               .toArray()
+          } else if (query.pagination?.bookmark) {
+            return await collection.find(json).skip(offset).limit(100).toArray()
           }
           return await collection.find(json).toArray()
         }

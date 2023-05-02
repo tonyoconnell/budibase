@@ -155,7 +155,7 @@ export interface CustomDatasourcePlus extends IntegrationBase {
    * Performs an advanced read operation
    *
    * @param originalQuery The 'Read' query of the custom DS+
-   * @param params The filter and sort to be appended
+   * @param params The filter, sort and pagination to be appended
    */
   search(originalQuery: any, params: SearchParams): Promise<any[] | any>
 }
