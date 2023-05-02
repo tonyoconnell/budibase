@@ -39,14 +39,16 @@ export async function makeExternalQuery(
             },
           },
         }
-        //TODO - nested for loop for all filter keys
         //Remove numbering from filters
-        for (let filter of Object.entries(json.filters?.equal || {})) {
-          if (hasKeyNumbering(filter[0])) {
-            parameters.filters.equal[removeKeyNumbering(filter[0])] = filter[1]
-            delete parameters.filters.equal[filter[0]]
+        for (let [key, filter] of Object.entries(json.filters || {})) {
+          for (let [field, value] of Object.entries(filter || {})) {
+            if (hasKeyNumbering(field)) {
+              parameters.filters[key][removeKeyNumbering(field)] = value
+              delete parameters.filters[key][field]
+            }
           }
         }
+
         break
       case Operation.UPDATE:
       case Operation.DELETE:

@@ -6,6 +6,7 @@ import {
   SearchParams,
   PaginationRequest,
   SortOrder,
+  SearchFilters,
 } from "@budibase/types"
 import {
   MongoClient,
@@ -436,6 +437,35 @@ class MongoIntegration implements CustomDatasourcePlus {
     }
   }
 
+  convertSearchFilterToMongoFilter(searchFilters: SearchFilters): object {
+    let mongoFilters: any = {}
+    function appendFilter(filter: object) {
+      for (let [key, value] of Object.entries(filter)) {
+        mongoFilters[key] = value
+      }
+    }
+
+    //Equals filter
+    Object.entries(searchFilters.equal || {})
+      .map(([key, value]) => ({
+        [`${key}`]: {
+          $eq: value,
+        },
+      }))
+      .forEach(filter => appendFilter(filter))
+
+    //Not equals filter
+    Object.entries(searchFilters.notEqual || {})
+      .map(([key, value]) => ({
+        [`${key}`]: {
+          $ne: value,
+        },
+      }))
+      .forEach(filter => appendFilter(filter))
+
+    return mongoFilters
+  }
+
   async create(query: MongoDBQuery) {
     try {
       await this.connect()
@@ -467,20 +497,17 @@ class MongoIntegration implements CustomDatasourcePlus {
   }
 
   async search(originalQuery: MongoDBQuery, params: SearchParams) {
-    //TODO - expand filters. Currently only handles equals
     let updatedJson = originalQuery.json
     if (!updatedJson) {
-      updatedJson = {
-        ...params.filters?.equal,
-      }
+      updatedJson = {}
     } else {
       if (typeof updatedJson === "string") {
         updatedJson = JSON.parse(updatedJson) as object
       }
-      updatedJson = {
-        ...updatedJson,
-        ...params.filters?.equal,
-      }
+    }
+    updatedJson = {
+      ...updatedJson,
+      ...this.convertSearchFilterToMongoFilter(params.filters || {}),
     }
     originalQuery.json = updatedJson
     originalQuery.pagination = params.pagination
