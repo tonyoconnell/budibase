@@ -439,29 +439,62 @@ class MongoIntegration implements CustomDatasourcePlus {
 
   convertSearchFilterToMongoFilter(searchFilters: SearchFilters): object {
     let mongoFilters: any = {}
+    type MongoAddtionalFilters = {
+      addFilters: object
+      or?: boolean
+    }
     function appendFilter(filter: object) {
       for (let [key, value] of Object.entries(filter)) {
         mongoFilters[key] = value
       }
     }
     function buildFilter(
-      searchFilter: any,
+      searchFilter: object = {},
       mongoKeyword: string,
-      mongoValue?: any
+      mongoValue?: any,
+      mongoAdditionalFilters: MongoAddtionalFilters = {
+        addFilters: {},
+        or: false,
+      }
     ) {
-      Object.entries(searchFilter || {})
-        .map(([key, value]) => ({
-          [`${key}`]: {
-            [`${mongoKeyword}`]: mongoValue ?? value,
-          },
-        }))
+      Object.entries(searchFilter)
+        .map(([key, value]) => {
+          let filter: object = {
+            [`${key}`]: {
+              [`${mongoKeyword}`]: mongoValue ?? value,
+              ...mongoAdditionalFilters.addFilters,
+            },
+          }
+          if (mongoAdditionalFilters.or) {
+            filter = {
+              $or: [
+                {
+                  [`${key}`]: {
+                    [`${mongoKeyword}`]: mongoValue ?? value,
+                  },
+                },
+                {
+                  [`${key}`]: {
+                    ...mongoAdditionalFilters.addFilters,
+                  },
+                },
+              ],
+            }
+          }
+          return filter
+        })
         .forEach(filter => appendFilter(filter))
     }
 
     buildFilter(searchFilters.equal, "$eq")
     buildFilter(searchFilters.notEqual, "$ne")
-    buildFilter(searchFilters.empty, "$eq", "")
-    buildFilter(searchFilters.notEmpty, "$ne", "")
+    buildFilter(searchFilters.empty, "$eq", "", {
+      addFilters: { $exists: false },
+      or: true,
+    })
+    buildFilter(searchFilters.notEmpty, "$ne", "", {
+      addFilters: { $exists: true },
+    })
 
     return mongoFilters
   }
@@ -524,8 +557,9 @@ class MongoIntegration implements CustomDatasourcePlus {
       switch (query.extra.actionType) {
         case "find": {
           let bookmark = parseInt(query.pagination?.bookmark ?? "1")
+          const limit = query.pagination?.limit || 100
           const page = bookmark <= 1 ? 0 : bookmark - 1
-          const offset = page * (query.pagination?.limit || 1)
+          const offset = page * limit
           if (query.pagination?.sort?.column) {
             return await collection
               .find(json)
@@ -537,10 +571,14 @@ class MongoIntegration implements CustomDatasourcePlus {
                     : -1,
               })
               .skip(offset)
-              .limit(100)
+              .limit(limit)
               .toArray()
           } else if (query.pagination?.bookmark) {
-            return await collection.find(json).skip(offset).limit(100).toArray()
+            return await collection
+              .find(json)
+              .skip(offset)
+              .limit(limit)
+              .toArray()
           }
           return await collection.find(json).toArray()
         }
