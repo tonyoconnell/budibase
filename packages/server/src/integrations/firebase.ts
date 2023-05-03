@@ -2,7 +2,8 @@ import {
   DatasourceFieldType,
   Integration,
   QueryType,
-  IntegrationBase,
+  CustomDatasourcePlus,
+  SearchParams,
 } from "@budibase/types"
 import { Firestore, WhereFilterOp } from "@google-cloud/firestore"
 
@@ -16,6 +17,8 @@ const SCHEMA: Integration = {
   docs: "https://firebase.google.com/docs/firestore/quickstart",
   friendlyName: "Firestore",
   type: "Non-relational",
+  customPlus: true,
+  relationships: false,
   description:
     "Cloud Firestore is a flexible, scalable database for mobile, web, and server development from Firebase and Google Cloud.",
   datasource: {
@@ -84,7 +87,7 @@ const SCHEMA: Integration = {
   },
 }
 
-class FirebaseIntegration implements IntegrationBase {
+class FirebaseIntegration implements CustomDatasourcePlus {
   private config: FirebaseConfig
   private client: Firestore
 
@@ -113,9 +116,35 @@ class FirebaseIntegration implements IntegrationBase {
     }
   }
 
-  async read(query: { json: object; extra: { [key: string]: string } }) {
+  async search(originalQuery: any, params: SearchParams): Promise<any> {
+    let filterField, filter, filterValue
+    if (Object.keys(params.filters?.equal || {}).length > 0) {
+      filterField = Object.keys(params.filters!.equal!)[0]
+      filter = "=="
+      filterValue = params.filters!.equal![filterField]
+    }
+    originalQuery.extra["pagination"] = params.pagination
+    if (filter && filterField) {
+      return await this.read({
+        json: originalQuery.json,
+        extra: {
+          filterField,
+          filter,
+          filterValue,
+          ...originalQuery.extra,
+        },
+      })
+    }
+    return await this.read(originalQuery)
+  }
+
+  async read(query: { json: object; extra: { [key: string]: any } }) {
     try {
       let snapshot
+      let sortOrder = query.extra?.pagination?.sort?.order
+        ?.toLowerCase()
+        .replace("ending", "")
+      let sortColumn = query.extra?.pagination?.sort?.column
       const collectionRef = this.client.collection(query.extra.collection)
       if (
         query.extra.filterField &&
@@ -128,7 +157,11 @@ class FirebaseIntegration implements IntegrationBase {
             query.extra.filter as WhereFilterOp,
             query.extra.filterValue
           )
+          .orderBy(sortColumn, sortOrder)
+          .limit(query.extra?.pagination?.limit)
           .get()
+      } else if (sortColumn && sortOrder) {
+        snapshot = await collectionRef.orderBy(sortColumn, sortOrder).get()
       } else {
         snapshot = await collectionRef.get()
       }
