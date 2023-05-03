@@ -34,11 +34,11 @@
     {API}
     tableId={id}
     allowAddRows={(!isUsersTable && !isCustomPlus) ||
-      $tables.selected?.queries?.create}
+      !!$tables.selected?.queries?.create}
     allowDeleteRows={(!isUsersTable && !isCustomPlus) ||
-      $tables.selected?.queries?.delete}
+      !!$tables.selected?.queries?.delete}
     allowEditRows={(!isUsersTable && !isCustomPlus) ||
-      $tables.selected?.queries?.update}
+      !!$tables.selected?.queries?.update}
     allowAddColumns={!isCustomPlus}
     allowEditColumns={!isCustomPlus}
     schemaOverrides={isUsersTable ? userSchemaOverrides : null}
