@@ -1,4 +1,4 @@
-import { QueryJson, Datasource, Operation } from "@budibase/types"
+import { QueryJson, Datasource, Operation, Row } from "@budibase/types"
 import { getIntegration } from "../index"
 import sdk from "../../sdk"
 import { executeV2 } from "src/api/controllers/query"
@@ -69,7 +69,7 @@ export async function makeExternalQuery(
         },
       },
       body: {
-        data: {},
+        data: [],
       },
       params: {},
     }
@@ -78,7 +78,13 @@ export async function makeExternalQuery(
     })
     if (operation === Operation.CREATE) {
       //Return the input for CREATE to make sure the _id is assigned
-      return [json.body]
+      let body = json.body as Row
+      let idField = json.meta?.table?.primary?.[0] || "_id"
+      if (!body?.["_id"]) {
+        body["_id"] = ctx.body.data[0]?.[idField]
+        body[`${idField}`] = ctx.body.data[0]?.[idField]
+      }
+      return [body]
     } else if (operation === Operation.DELETE) {
       return []
     }

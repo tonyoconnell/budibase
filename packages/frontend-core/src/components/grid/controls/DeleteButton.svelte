@@ -33,7 +33,7 @@
       icon="Delete"
       size="M"
       on:click={modal.show}
-      disabled={!$config.allowEditRows}
+      disabled={!$config.allowDeleteRows}
       cta
     >
       Delete {selectedRowCount} row{selectedRowCount === 1 ? "" : "s"}

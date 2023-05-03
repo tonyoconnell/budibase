@@ -140,31 +140,31 @@ class FirebaseIntegration implements CustomDatasourcePlus {
 
   async read(query: { json: object; extra: { [key: string]: any } }) {
     try {
-      let snapshot
       let sortOrder = query.extra?.pagination?.sort?.order
         ?.toLowerCase()
         .replace("ending", "")
       let sortColumn = query.extra?.pagination?.sort?.column
       const collectionRef = this.client.collection(query.extra.collection)
+      let snapshot
       if (
         query.extra.filterField &&
         query.extra.filter &&
         query.extra.filterValue
       ) {
-        snapshot = await collectionRef
-          .where(
-            query.extra.filterField,
-            query.extra.filter as WhereFilterOp,
-            query.extra.filterValue
-          )
+        snapshot = collectionRef.where(
+          query.extra.filterField,
+          query.extra.filter as WhereFilterOp,
+          query.extra.filterValue
+        )
+      }
+      if (sortColumn && sortOrder) {
+        snapshot = snapshot ?? collectionRef
+        snapshot = snapshot
           .orderBy(sortColumn, sortOrder)
           .limit(query.extra?.pagination?.limit)
-          .get()
-      } else if (sortColumn && sortOrder) {
-        snapshot = await collectionRef.orderBy(sortColumn, sortOrder).get()
-      } else {
-        snapshot = await collectionRef.get()
       }
+      snapshot = snapshot ?? collectionRef
+      snapshot = await snapshot.get()
       const result: any[] = []
       snapshot.forEach(doc => result.push(doc.data()))
 
