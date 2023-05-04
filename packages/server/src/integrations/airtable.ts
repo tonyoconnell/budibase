@@ -4,6 +4,7 @@ import {
   QueryType,
   CustomDatasourcePlus,
   SearchParams,
+  PaginationRequest,
 } from "@budibase/types"
 
 const Airtable = require("airtable")
@@ -123,18 +124,41 @@ class AirtableIntegration implements CustomDatasourcePlus {
     view: any
     sort: Array<object>
     filterByFormula: string
+    pagination: PaginationRequest
   }) {
     try {
-      const records = await this.client(query.table)
-        .select({
-          maxRecords: query.numRecords || 100,
-          view: query.view,
-          sort: query.sort || [],
-          filterByFormula: query.filterByFormula || "",
-        })
-        .firstPage()
-      // @ts-ignore
-      return records.map(({ fields }) => fields)
+      let records: any = []
+      let finalRecords: any = []
+      const processPage = (partialRecords: any, fetchNextPage: Function) => {
+        records = [...records, ...partialRecords]
+        fetchNextPage()
+      }
+
+      return await new Promise(resolve => {
+        const processRecords = () => {
+          const count = records.length
+          const bookmark = parseInt(query.pagination?.bookmark ?? "1")
+          const limit = query.pagination?.limit || 100
+          const page = bookmark <= 1 ? 1 : bookmark
+          const offset = page * limit - limit
+
+          resolve(
+            records
+              // @ts-ignore
+              .map(({ fields }) => fields)
+              .slice(offset, limit * page)
+          )
+        }
+        this.client(query.table)
+          .select({
+            maxRecords: query.numRecords || 100,
+            view: query.view,
+            sort: query.sort || [],
+            pageSize: 24,
+            filterByFormula: query.filterByFormula || "",
+          })
+          .eachPage(processPage, processRecords)
+      })
     } catch (err) {
       console.error("Error writing to airtable", err)
       return []
@@ -194,6 +218,11 @@ class AirtableIntegration implements CustomDatasourcePlus {
         ...originalQuery,
         filterByFormula,
       }
+    }
+
+    originalQuery = {
+      ...originalQuery,
+      pagination: params.pagination,
     }
 
     return await this.read(originalQuery)
