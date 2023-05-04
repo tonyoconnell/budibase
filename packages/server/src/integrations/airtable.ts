@@ -152,7 +152,6 @@ class AirtableIntegration implements CustomDatasourcePlus {
             maxRecords: query.numRecords || 100,
             view: query.view,
             sort: query.sort || [],
-            pageSize: 24,
             filterByFormula: query.filterByFormula || "",
           })
           .eachPage(processPage, processRecords)
