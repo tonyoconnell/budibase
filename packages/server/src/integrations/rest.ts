@@ -3,13 +3,14 @@ import {
   DatasourceFieldType,
   QueryType,
   PaginationConfig,
-  IntegrationBase,
+  CustomDatasourcePlus,
   PaginationValues,
   RestQueryFields as RestQuery,
   RestConfig,
   RestAuthType,
   RestBasicAuthConfig,
   RestBearerAuthConfig,
+  SearchParams,
 } from "@budibase/types"
 import { get } from "lodash"
 import * as https from "https"
@@ -64,6 +65,8 @@ const SCHEMA: Integration = {
     "With the REST API datasource, you can connect, query and pull data from multiple REST APIs. You can then use the retrieved data to build apps.",
   friendlyName: "REST API",
   type: "API",
+  customPlus: true,
+  relationships: false,
   datasource: {
     url: {
       type: DatasourceFieldType.STRING,
@@ -116,7 +119,7 @@ const SCHEMA: Integration = {
   },
 }
 
-class RestIntegration implements IntegrationBase {
+class RestIntegration implements CustomDatasourcePlus {
   private config: RestConfig
   private headers: {
     [key: string]: string
@@ -427,6 +430,13 @@ class RestIntegration implements IntegrationBase {
 
   async delete(opts: RestQuery) {
     return this._req({ ...opts, method: "DELETE" })
+  }
+
+  async search(originalQuery: RestQuery, params: SearchParams): Promise<any> {
+    return this._req({
+      ...originalQuery,
+      method: "POST",
+    })
   }
 }
 

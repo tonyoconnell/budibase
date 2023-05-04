@@ -159,12 +159,12 @@ class FirebaseIntegration implements CustomDatasourcePlus {
       }
       if (sortColumn && sortOrder) {
         snapshot = snapshot ?? collectionRef
-        snapshot = snapshot
-          .orderBy(sortColumn, sortOrder)
-          .limit(query.extra?.pagination?.limit)
+        snapshot = snapshot.orderBy(sortColumn, sortOrder)
       }
       snapshot = snapshot ?? collectionRef
-      snapshot = await snapshot.get()
+      snapshot = await snapshot
+        .limit(query.extra?.pagination?.limit || 100)
+        .get()
       const result: any[] = []
       snapshot.forEach(doc => result.push(doc.data()))
 
