@@ -2,7 +2,8 @@ import {
   Integration,
   DatasourceFieldType,
   QueryType,
-  IntegrationBase,
+  CustomDatasourcePlus,
+  SearchParams,
 } from "@budibase/types"
 
 const Airtable = require("airtable")
@@ -18,6 +19,8 @@ const SCHEMA: Integration = {
     "Airtable is a spreadsheet-database hybrid, with the features of a database but applied to a spreadsheet.",
   friendlyName: "Airtable",
   type: "Spreadsheet",
+  customPlus: true,
+  relationships: false,
   datasource: {
     apiKey: {
       type: DatasourceFieldType.PASSWORD,
@@ -79,7 +82,7 @@ const SCHEMA: Integration = {
   },
 }
 
-class AirtableIntegration implements IntegrationBase {
+class AirtableIntegration implements CustomDatasourcePlus {
   private config: AirtableConfig
   private client: any
 
@@ -103,10 +106,21 @@ class AirtableIntegration implements IntegrationBase {
     }
   }
 
-  async read(query: { table: any; numRecords: any; view: any }) {
+  async read(query: {
+    table: any
+    numRecords: any
+    view: any
+    sort: Array<object>
+    filterByFormula: string
+  }) {
     try {
       const records = await this.client(query.table)
-        .select({ maxRecords: query.numRecords || 10, view: query.view })
+        .select({
+          maxRecords: query.numRecords || 10,
+          view: query.view,
+          sort: query.sort || [],
+          filterByFormula: query.filterByFormula || "",
+        })
         .firstPage()
       // @ts-ignore
       return records.map(({ fields }) => fields)
@@ -139,6 +153,39 @@ class AirtableIntegration implements IntegrationBase {
       console.error("Error writing to airtable", err)
       throw err
     }
+  }
+
+  async search(originalQuery: any, params: SearchParams): Promise<any> {
+    let sortOrder = params?.pagination?.sort?.order
+      ?.toLowerCase()
+      .replace("ending", "")
+    let sortColumn = params?.pagination?.sort?.column
+    if (sortOrder && sortColumn) {
+      originalQuery = {
+        ...originalQuery,
+        sort: [{ field: sortColumn, direction: sortOrder }],
+      }
+    }
+
+    let filterByFormula = ""
+    for (let [key, value] of Object.entries(params.filters?.equal || {})) {
+      filterByFormula += `${key}='${value}',`
+    }
+    if (filterByFormula.length > 0) {
+      //remove trailing comma
+      filterByFormula = filterByFormula.substring(0, filterByFormula.length - 1)
+
+      if (Object.entries(params.filters?.equal || {}).length > 1) {
+        //wrap in AND statement
+        filterByFormula = `AND(${filterByFormula})`
+      }
+      originalQuery = {
+        ...originalQuery,
+        filterByFormula,
+      }
+    }
+
+    return await this.read(originalQuery)
   }
 }
 
