@@ -77,7 +77,18 @@ const SCHEMA: Integration = {
       },
     },
     delete: {
-      type: QueryType.JSON,
+      type: QueryType.FIELDS,
+      fields: {
+        id: {
+          display: "Record ID",
+          type: DatasourceFieldType.STRING,
+          required: true,
+        },
+        table: {
+          type: DatasourceFieldType.STRING,
+          required: true,
+        },
+      },
     },
   },
 }
@@ -116,7 +127,7 @@ class AirtableIntegration implements CustomDatasourcePlus {
     try {
       const records = await this.client(query.table)
         .select({
-          maxRecords: query.numRecords || 10,
+          maxRecords: query.numRecords || 100,
           view: query.view,
           sort: query.sort || [],
           filterByFormula: query.filterByFormula || "",
@@ -146,9 +157,9 @@ class AirtableIntegration implements CustomDatasourcePlus {
     }
   }
 
-  async delete(query: { table: any; ids: any }) {
+  async delete(query: { table: any; id: any }) {
     try {
-      return await this.client(query.table).destroy(query.ids)
+      return await this.client(query.table).destroy(query.id)
     } catch (err) {
       console.error("Error writing to airtable", err)
       throw err
