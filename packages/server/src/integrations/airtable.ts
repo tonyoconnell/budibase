@@ -128,7 +128,6 @@ class AirtableIntegration implements CustomDatasourcePlus {
   }) {
     try {
       let records: any = []
-      let finalRecords: any = []
       const processPage = (partialRecords: any, fetchNextPage: Function) => {
         records = [...records, ...partialRecords]
         fetchNextPage()
@@ -136,7 +135,6 @@ class AirtableIntegration implements CustomDatasourcePlus {
 
       return await new Promise(resolve => {
         const processRecords = () => {
-          const count = records.length
           const bookmark = parseInt(query.pagination?.bookmark ?? "1")
           const limit = query.pagination?.limit || 100
           const page = bookmark <= 1 ? 1 : bookmark
