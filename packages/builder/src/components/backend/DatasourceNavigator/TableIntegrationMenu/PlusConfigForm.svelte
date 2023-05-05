@@ -39,9 +39,10 @@
   let requireSpecificTables = false
 
   $: integration = datasource && $integrations[datasource.source]
-  $: plusTables = datasource?.plus
-    ? Object.values(datasource?.entities || {})
-    : []
+  $: plusTables =
+    datasource?.plus || datasource?.customPlus
+      ? Object.values(datasource?.entities || {})
+      : []
   $: relationships = getRelationships(plusTables)
   $: schemaError = $datasources.schemaError
   $: relationshipInfo = relationshipTableData(relationships)
