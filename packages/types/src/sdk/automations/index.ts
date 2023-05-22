@@ -1,5 +1,5 @@
 import { Automation, AutomationMetadata } from "../../documents"
-import { Job } from "bull"
+import { Job } from "bullmq"
 
 export interface AutomationDataEvent {
   appId?: string

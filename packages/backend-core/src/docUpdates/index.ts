@@ -3,6 +3,8 @@ import {
   ProcessorMap,
   default as DocumentUpdateProcessor,
 } from "../events/processors/async/DocumentUpdateProcessor"
+import { Worker } from "bullmq"
+import * as redis from "../redis"
 
 let processingPromise: Promise<void>
 let documentProcessor: DocumentUpdateProcessor
@@ -16,7 +18,7 @@ export function init(processors: ProcessorMap) {
   }
   // if not processing in this instance, kick it off
   if (!processingPromise) {
-    processingPromise = asyncEventQueue.process(async job => {
+    const worker = new Worker(asyncEventQueue.name, async job => {
       const { event, identity, properties, timestamp } = job.data
       await documentProcessor.processEvent(
         event,
@@ -24,6 +26,8 @@ export function init(processors: ProcessorMap) {
         properties,
         timestamp
       )
+    }, {
+      connection: redis.utils.getRedisOptions().opts
     })
   }
 }

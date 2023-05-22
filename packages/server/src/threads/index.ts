@@ -14,9 +14,6 @@ function typeToFile(type: any) {
     case ThreadType.QUERY:
       filename = "./query"
       break
-    case ThreadType.AUTOMATION:
-      filename = "./automation"
-      break
     default:
       throw "Unknown thread type"
   }

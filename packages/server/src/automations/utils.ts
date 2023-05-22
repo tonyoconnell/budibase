@@ -1,4 +1,3 @@
-import { Thread, ThreadType } from "../threads"
 import { definitions } from "./triggerInfo"
 import { automationQueue } from "./bullboard"
 import newid from "../db/newid"
@@ -10,11 +9,11 @@ import { cloneDeep } from "lodash/fp"
 import { quotas } from "@budibase/pro"
 import { Automation, AutomationJob, WebhookActionType } from "@budibase/types"
 import sdk from "../sdk"
+import * as runner from "./automation"
 
 const REBOOT_CRON = "@reboot"
 const WH_STEP_ID = definitions.WEBHOOK.stepId
 const CRON_STEP_ID = definitions.CRON.stepId
-const Runner = new Thread(ThreadType.AUTOMATION)
 
 function loggingArgs(job: AutomationJob) {
   return [
@@ -37,7 +36,7 @@ export async function processEvent(job: AutomationJob) {
       // need to actually await these so that an error can be captured properly
       console.log("automation running", ...loggingArgs(job))
 
-      const runFn = () => Runner.run(job)
+      const runFn = () => runner.execute(job)
       const result = await quotas.addAutomation(runFn, {
         automationId,
       })
@@ -51,6 +50,8 @@ export async function processEvent(job: AutomationJob) {
 
   return await context.doInAutomationContext({ appId, automationId, task })
 }
+
+export default processEvent
 
 export async function updateTestHistory(
   appId: any,
@@ -91,7 +92,7 @@ export async function disableAllCrons(appId: any) {
     if (job.key.includes(`${appId}_cron`)) {
       promises.push(automationQueue.removeRepeatableByKey(job.key))
       if (job.id) {
-        promises.push(automationQueue.removeJobs(job.id))
+        promises.push(automationQueue.remove(job.id))
       }
     }
   }
@@ -153,11 +154,12 @@ export async function enableCronTrigger(appId: any, automation: Automation) {
     // make a job id rather than letting Bull decide, makes it easier to handle on way out
     const jobId = `${appId}_cron_${newid()}`
     const job: any = await automationQueue.add(
+      "automationEvent",
       {
         automation,
         event: { appId, timestamp: Date.now() },
       },
-      { repeat: { cron: trigger.inputs.cron }, jobId }
+      { repeat: { pattern: trigger.inputs.cron }, jobId }
     )
     // Assign cron job ID from bull so we can remove it later if the cron trigger is removed
     trigger.cronJobId = job.id

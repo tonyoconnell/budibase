@@ -1,18 +1,16 @@
-import { default as threadUtils } from "./utils"
-import { Job } from "bull"
-threadUtils.threadSetup()
+import { Job } from "bullmq"
 import {
   isRecurring,
   disableCronById,
   isErrorInOutput,
-} from "../automations/utils"
+} from "./utils"
 import * as actions from "../automations/actions"
 import * as automationUtils from "../automations/automationUtils"
 import { default as AutomationEmitter } from "../events/AutomationEmitter"
 import { generateAutomationMetadataID, isProdAppID } from "../db/utils"
 import { definitions as triggerDefs } from "../automations/triggerInfo"
 import { AutomationErrors, MAX_AUTOMATION_RECURRING_ERRORS } from "../constants"
-import { storeLog } from "../automations/logging"
+import { storeLog } from "./logging"
 import {
   Automation,
   AutomationStep,
@@ -26,7 +24,6 @@ import {
   TriggerOutput,
   AutomationContext,
 } from "../definitions/automations"
-import { WorkerCallback } from "./definitions"
 import { context, logging } from "@budibase/backend-core"
 import { processObject } from "@budibase/string-templates"
 import { cloneDeep } from "lodash/fp"
@@ -128,7 +125,7 @@ class Orchestrator {
     )
     const automation = this._automation
     const trigger = automation.definition.trigger
-    await disableCronById(this._job.id)
+    await disableCronById(this._job.id!)
     this.updateExecutionOutput(
       trigger.id,
       trigger.stepId,
@@ -296,6 +293,7 @@ class Orchestrator {
             typeof loopStep.inputs.binding === "string" &&
             loopStep.inputs.option === "String"
           ) {
+            // @ts-ignore
             item = automationUtils.stringSplit(newInput.binding)
           } else if (Array.isArray(loopStep.inputs.binding)) {
             item = loopStep.inputs.binding
@@ -475,7 +473,7 @@ class Orchestrator {
   }
 }
 
-export function execute(job: Job, callback: WorkerCallback) {
+export function execute(job: Job) {
   const appId = job.data.event.appId
   if (!appId) {
     throw new Error("Unable to execute, event doesn't contain app ID.")
@@ -485,12 +483,7 @@ export function execute(job: Job, callback: WorkerCallback) {
     // put into automation thread for whole context
     await context.doInEnvironmentContext(envVars, async () => {
       const automationOrchestrator = new Orchestrator(job)
-      try {
-        const response = await automationOrchestrator.execute()
-        callback(null, response)
-      } catch (err) {
-        callback(err)
-      }
+        return automationOrchestrator.execute()
     })
   })
 }

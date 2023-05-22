@@ -59,7 +59,7 @@ async function queueRelevantRowAutomations(
         automationTrigger.inputs &&
         automationTrigger.inputs.tableId === event.row.tableId
       ) {
-        await automationQueue.add({ automation, event }, JOB_OPTS)
+        await automationQueue.add("automationEvent", { automation, event }, JOB_OPTS)
       }
     }
   })
@@ -120,7 +120,7 @@ export async function externalTrigger(
     const job = { data } as AutomationJob
     return utils.processEvent(job)
   } else {
-    return automationQueue.add(data, JOB_OPTS)
+    return automationQueue.add("automationEvent", data, JOB_OPTS)
   }
 }
 
@@ -149,7 +149,7 @@ export async function rebootTrigger() {
               timestamp: Date.now(),
             },
           }
-          rebootEvents.push(automationQueue.add(job, JOB_OPTS))
+          rebootEvents.push(automationQueue.add("automationEvent", job, JOB_OPTS))
         }
       }
       await Promise.all(rebootEvents)

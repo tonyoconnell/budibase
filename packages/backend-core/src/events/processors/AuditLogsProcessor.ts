@@ -9,14 +9,15 @@ import {
 } from "@budibase/types"
 import { EventProcessor } from "./types"
 import { getAppId, doInTenant, getTenantId } from "../../context"
-import BullQueue from "bull"
+import { Queue, Worker } from "bullmq"
 import { createQueue, JobQueue } from "../../queue"
 import { isAudited } from "../../utils"
 import env from "../../environment"
+import * as redis from "../../redis"
 
 export default class AuditLogsProcessor implements EventProcessor {
   static auditLogsEnabled = false
-  static auditLogQueue: BullQueue.Queue<AuditLogQueueEvent>
+  static auditLogQueue: Queue<AuditLogQueueEvent>
 
   // can't use constructor as need to return promise
   static init(fn: AuditLogFn) {
@@ -25,7 +26,8 @@ export default class AuditLogsProcessor implements EventProcessor {
     AuditLogsProcessor.auditLogQueue = createQueue<AuditLogQueueEvent>(
       JobQueue.AUDIT_LOG
     )
-    return AuditLogsProcessor.auditLogQueue.process(async job => {
+
+    new Worker(AuditLogsProcessor.auditLogQueue.name, job => {
       return doInTenant(job.data.tenantId, async () => {
         let properties = job.data.properties
         if (properties.audited) {
@@ -51,7 +53,10 @@ export default class AuditLogsProcessor implements EventProcessor {
           hostInfo,
         })
       })
+    }, {
+      connection: redis.utils.getRedisOptions().opts
     })
+
   }
 
   async processEvent(
@@ -65,7 +70,7 @@ export default class AuditLogsProcessor implements EventProcessor {
       const userId =
         identity.type === IdentityType.USER ? identity.id : undefined
       // add to the event queue, rather than just writing immediately
-      await AuditLogsProcessor.auditLogQueue.add({
+      await AuditLogsProcessor.auditLogQueue.add("auditLogEvent", {
         event,
         properties,
         opts: {

@@ -1,12 +1,12 @@
-import { BullAdapter } from "@bull-board/api/bullAdapter"
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter"
 import { KoaAdapter } from "@bull-board/koa"
 import { queue } from "@budibase/backend-core"
-import * as automation from "../threads/automation"
+import * as automation from "./automation"
 import { backups } from "@budibase/pro"
 import { createBullBoard } from "@bull-board/api"
-import BullQueue from "bull"
+import { Queue } from "bullmq"
 
-export const automationQueue: BullQueue.Queue = queue.createQueue(
+export const automationQueue: Queue = queue.createQueue(
   queue.JobQueue.AUTOMATION,
   { removeStalledCb: automation.removeStalled }
 )
@@ -23,7 +23,7 @@ export async function init() {
   const adapters = []
   const serverAdapter: any = new KoaAdapter()
   for (let queue of queues) {
-    adapters.push(new BullAdapter(queue))
+    adapters.push(new BullMQAdapter(queue))
   }
   createBullBoard({
     queues: adapters,

@@ -25,7 +25,6 @@ function newJob(queue: string, message: any) {
  */
 class InMemoryQueue {
   _name: string
-  _opts?: any
   _messages: any[]
   _emitter: EventEmitter
   _runCount: number
@@ -36,9 +35,8 @@ class InMemoryQueue {
    * @param {object|null} opts This is not used by the in memory queue as there is no real use
    * case when in memory, but is the same API as Bull
    */
-  constructor(name: string, opts = null) {
+  constructor(name: string) {
     this._name = name
-    this._opts = opts
     this._messages = []
     this._emitter = new events.EventEmitter()
     this._runCount = 0

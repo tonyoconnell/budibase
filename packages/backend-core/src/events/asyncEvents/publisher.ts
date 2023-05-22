@@ -7,6 +7,6 @@ export async function publishAsyncEvent(payload: EventPayload) {
   }
   const { event, identity } = payload
   if (AsyncEvents.indexOf(event) !== -1 && identity.tenantId) {
-    await asyncEventQueue.add(payload)
+    await asyncEventQueue.add("systemEvent", payload)
   }
 }

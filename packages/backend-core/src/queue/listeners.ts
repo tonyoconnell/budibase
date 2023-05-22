@@ -1,6 +1,7 @@
-import { Job, JobId, Queue } from "bull"
+import { Job, Queue, QueueEvents } from "bullmq"
 import { JobQueue } from "./constants"
 import * as context from "../context"
+import * as redis from "../redis"
 
 export type StalledFn = (job: Job) => Promise<void>
 
@@ -16,20 +17,20 @@ export function addListeners(
 }
 
 function handleStalled(queue: Queue, removeStalledCb?: StalledFn) {
-  queue.on("stalled", async (job: Job) => {
-    if (removeStalledCb) {
-      await removeStalledCb(job)
-    } else if (job.opts.repeat) {
-      const jobId = job.id
-      const repeatJobs = await queue.getRepeatableJobs()
-      for (let repeatJob of repeatJobs) {
-        if (repeatJob.id === jobId) {
-          await queue.removeRepeatableByKey(repeatJob.key)
-        }
-      }
-      console.log(`jobId=${jobId} disabled`)
-    }
-  })
+  // queue.on("stalled", async (job: Job) => {
+  //   if (removeStalledCb) {
+  //     await removeStalledCb(job)
+  //   } else if (job.opts.repeat) {
+  //     const jobId = job.id
+  //     const repeatJobs = await queue.getRepeatableJobs()
+  //     for (let repeatJob of repeatJobs) {
+  //       if (repeatJob.id === jobId) {
+  //         await queue.removeRepeatableByKey(repeatJob.key)
+  //       }
+  //     }
+  //     console.log(`jobId=${jobId} disabled`)
+  //   }
+  // })
 }
 
 function getLogParams(
@@ -37,7 +38,7 @@ function getLogParams(
   event: BullEvent,
   opts: {
     job?: Job
-    jobId?: JobId
+    jobId?: string
     error?: Error
   } = {},
   extra: any = {}
@@ -96,6 +97,7 @@ const EventTypeMap: { [key in JobQueue]: QueueEventType } = {
   [JobQueue.SYSTEM_EVENT_QUEUE]: QueueEventType.SYSTEM_EVENT,
 }
 
+
 function logging(queue: Queue, jobQueue: JobQueue) {
   const eventType = EventTypeMap[jobQueue]
 
@@ -109,13 +111,17 @@ function logging(queue: Queue, jobQueue: JobQueue) {
     }
   }
 
-  queue
-    .on(BullEvent.STALLED, async (job: Job) => {
+  const queueEvents = new QueueEvents(queue.name, {
+    connection: redis.utils.getRedisOptions().opts
+  });
+
+  queueEvents
+    .on(BullEvent.STALLED, async ({ jobId }) => {
       // A job has been marked as stalled. This is useful for debugging job
       // workers that crash or pause the event loop.
-      await doInJobContext(job, () => {
-        console.error(...getLogParams(eventType, BullEvent.STALLED, { job }))
-      })
+      // await doInJobContext(job, () => {
+        console.error(...getLogParams(eventType, BullEvent.STALLED, { jobId }))
+      // })
     })
     .on(BullEvent.ERROR, (error: any) => {
       // An error occurred.
@@ -123,45 +129,45 @@ function logging(queue: Queue, jobQueue: JobQueue) {
     })
 
   if (process.env.NODE_DEBUG?.includes("bull")) {
-    queue
-      .on(BullEvent.WAITING, (jobId: JobId) => {
+    queueEvents
+      .on(BullEvent.WAITING, ({ jobId, prev }) => {
         // A Job is waiting to be processed as soon as a worker is idling.
         console.info(...getLogParams(eventType, BullEvent.WAITING, { jobId }))
       })
-      .on(BullEvent.ACTIVE, async (job: Job, jobPromise: any) => {
+      .on(BullEvent.ACTIVE, async ({ jobId }) => {
         // A job has started. You can use `jobPromise.cancel()`` to abort it.
-        await doInJobContext(job, () => {
-          console.info(...getLogParams(eventType, BullEvent.ACTIVE, { job }))
-        })
+        // await doInJobContext(job, () => {
+          console.info(...getLogParams(eventType, BullEvent.ACTIVE, { jobId }))
+        // })
       })
-      .on(BullEvent.PROGRESS, async (job: Job, progress: any) => {
+      .on(BullEvent.PROGRESS, async ({ jobId, data }) => {
         // A job's progress was updated
-        await doInJobContext(job, () => {
+        // await doInJobContext(job, () => {
           console.info(
             ...getLogParams(
               eventType,
               BullEvent.PROGRESS,
-              { job },
-              { progress }
+              { jobId },
+              { data }
             )
           )
-        })
+        // })
       })
-      .on(BullEvent.COMPLETED, async (job: Job, result) => {
+      .on(BullEvent.COMPLETED, async ({ jobId, returnvalue, prev }) => {
         // A job successfully completed with a `result`.
-        await doInJobContext(job, () => {
+        // await doInJobContext(job, () => {
           console.info(
-            ...getLogParams(eventType, BullEvent.COMPLETED, { job }, { result })
+            ...getLogParams(eventType, BullEvent.COMPLETED, { jobId }, { returnvalue, prev })
           )
-        })
+        // })
       })
-      .on(BullEvent.FAILED, async (job: Job, error: any) => {
+      .on(BullEvent.FAILED, async ({ jobId, failedReason, prev }) => {
         // A job failed with reason `err`!
-        await doInJobContext(job, () => {
+        // await doInJobContext(job, () => {
           console.error(
-            ...getLogParams(eventType, BullEvent.FAILED, { job, error })
+            ...getLogParams(eventType, BullEvent.FAILED, { jobId }, { failedReason, prev })
           )
-        })
+        // })
       })
       .on(BullEvent.PAUSED, () => {
         // The queue has been paused.
@@ -171,7 +177,7 @@ function logging(queue: Queue, jobQueue: JobQueue) {
         // The queue has been resumed.
         console.info(...getLogParams(eventType, BullEvent.RESUMED))
       })
-      .on(BullEvent.CLEANED, (jobs: Job[], type: string) => {
+      .on(BullEvent.CLEANED, ({ count }) => {
         // Old jobs have been cleaned from the queue. `jobs` is an array of cleaned
         // jobs, and `type` is the type of jobs cleaned.
         console.info(
@@ -179,7 +185,7 @@ function logging(queue: Queue, jobQueue: JobQueue) {
             eventType,
             BullEvent.CLEANED,
             {},
-            { length: jobs.length, type }
+            { length: count }
           )
         )
       })
@@ -187,9 +193,9 @@ function logging(queue: Queue, jobQueue: JobQueue) {
         // Emitted every time the queue has processed all the waiting jobs (even if there can be some delayed jobs not yet processed)
         console.info(...getLogParams(eventType, BullEvent.DRAINED))
       })
-      .on(BullEvent.REMOVED, (job: Job) => {
+      .on(BullEvent.REMOVED, ({ jobId, prev }) => {
         // A job successfully removed.
-        console.info(...getLogParams(eventType, BullEvent.REMOVED, { job }))
+        console.info(...getLogParams(eventType, BullEvent.REMOVED, { jobId }, { prev }))
       })
   }
 }
