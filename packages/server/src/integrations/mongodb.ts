@@ -7,6 +7,8 @@ import {
   PaginationRequest,
   SortOrder,
   SearchFilters,
+  ConnectionInfo,
+  DatasourceFeature,
 } from "@budibase/types"
 import {
   MongoClient,

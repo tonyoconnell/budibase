@@ -6,6 +6,7 @@ import {
   CustomDatasourcePlus,
   SearchParams,
   PaginationRequest,
+  Integration,
 } from "@budibase/types"
 
 import Airtable from "airtable"
@@ -147,7 +148,7 @@ class AirtableIntegration implements CustomDatasourcePlus {
     table: any
     numRecords: any
     view: any
-    sort: Array<object>
+    sort: any
     filterByFormula: string
     pagination: PaginationRequest
   }) {

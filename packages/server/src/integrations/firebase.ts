@@ -4,6 +4,8 @@ import {
   QueryType,
   CustomDatasourcePlus,
   SearchParams,
+  DatasourceFeature,
+  ConnectionInfo,
 } from "@budibase/types"
 import { Firestore, WhereFilterOp } from "@google-cloud/firestore"
 
