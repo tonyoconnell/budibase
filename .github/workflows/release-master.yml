@@ -42,7 +42,7 @@ jobs:
         with:
           node-version: 14.x
 
-      - run: yarn
+      - run: yarn install --frozen-lockfile
       - name: Update versions
         run: |
           version=$(cat lerna.json \
@@ -57,8 +57,11 @@ jobs:
           echo "Syncing yarn workspace"
           yarn
       - run: yarn lint
-      - run: yarn build
+      - run: yarn build --configuration=production
       - run: yarn build:sdk
+
+      - name: Reset pro dependencies
+        run: node scripts/resetProDependencies.js
 
       - name: Publish budibase packages to NPM
         env:
