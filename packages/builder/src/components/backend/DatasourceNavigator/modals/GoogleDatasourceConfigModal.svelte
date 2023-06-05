@@ -11,7 +11,6 @@
   import { IntegrationNames, IntegrationTypes } from "constants/backend"
   import cloneDeep from "lodash/cloneDeepWith"
   import GoogleButton from "components/common/GoogleButton.svelte"
-  import { saveDatasource as save } from "builderStore/datasource"
   import { organisation } from "stores/portal"
   import { onDestroy, onMount } from "svelte"
   import {
@@ -170,8 +169,7 @@
     {:else if isGoogleConfigured === false}
       <Body size="S"
         >Google authentication is not enabled, please complete Google SSO
-        configuration.</Body
-      >
+        configuration.</Body>
       <Link href="/builder/portal/settings/auth">Configure Google SSO</Link>
     {/if}
   {/if}
