@@ -45,7 +45,9 @@ jobs:
       - run: yarn
       - name: Tag release
         run: |
+          EVENT_VERSIONING=${{ github.event.inputs.versioning }}
+          VERSIONING=${EVENT_VERSIONING:-patch}
           # setup the username and email.
           git config --global user.name "Budibase Staging Release Bot"
           git config --global user.email "<>"
-          ./scripts/versionCommit.sh ${{ github.event.inputs.versioning:-patch }}
+          ./scripts/versionCommit.sh $VERSIONING
