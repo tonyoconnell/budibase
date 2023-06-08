@@ -19,6 +19,11 @@ router
     applicationValidator(),
     controller.create
   )
+  .get(
+    "/api/applications/:appId/changes",
+    authorized(permissions.BUILDER),
+    controller.changes
+  )
   .get("/api/applications/:appId/definition", controller.fetchAppDefinition)
   .get("/api/applications", controller.fetch)
   .get("/api/applications/:appId/appPackage", controller.fetchAppPackage)

@@ -42,14 +42,7 @@ import { cleanupAutomations } from "../../automations/utils"
 import { checkAppMetadata } from "../../automations/logging"
 import { getUniqueRows } from "../../utilities/usageQuota/rows"
 import { quotas, groups } from "@budibase/pro"
-import {
-  App,
-  Layout,
-  Screen,
-  MigrationType,
-  Database,
-  UserCtx,
-} from "@budibase/types"
+import { App, Layout, Screen, MigrationType, UserCtx } from "@budibase/types"
 import { BASE_LAYOUT_PROP_IDS } from "../../constants/layouts"
 import sdk from "../../sdk"
 
@@ -555,6 +548,16 @@ export async function sync(ctx: UserCtx) {
     ctx.body = await sdk.applications.syncApp(appId)
   } catch (err: any) {
     ctx.throw(err.status || 400, err.message)
+  }
+}
+
+export async function changes(ctx: UserCtx) {
+  const appId = ctx.params.appId
+  try {
+    ctx.body = await sdk.applications.hasDevAppChanged(appId)
+  } catch (err: any) {
+    const message = `Unable to check for changes between environments - ${err.message}`
+    ctx.throw(err.status || 400, message)
   }
 }
 

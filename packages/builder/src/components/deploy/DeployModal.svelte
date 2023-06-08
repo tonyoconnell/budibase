@@ -11,8 +11,10 @@
   import { API } from "api"
   import analytics, { Events, EventSource } from "analytics"
   import { store } from "builderStore"
+  import { appChanges } from "stores/backend"
   import TourWrap from "../portal/onboarding/TourWrap.svelte"
   import { TOUR_STEP_KEYS } from "../portal/onboarding/tours.js"
+  import { onMount } from "svelte"
 
   let publishModal
   let asyncModal
@@ -54,10 +56,23 @@
       window.open(publishedUrl, "_blank")
     }
   }
+
+  onMount(async () => {
+    await appChanges.init()
+  })
 </script>
 
 <TourWrap tourStepKey={TOUR_STEP_KEYS.BUILDER_APP_PUBLISH}>
-  <Button cta on:click={publishModal.show} id={"builder-app-publish-button"}>
+  <Button
+    cta
+    on:click={async () => {
+      await appChanges.fetch()
+      console.log("fetched")
+      publishModal.show()
+    }}
+    id={"builder-app-publish-button"}
+    disabled={!$appChanges.changed}
+  >
     Publish
   </Button>
 </TourWrap>

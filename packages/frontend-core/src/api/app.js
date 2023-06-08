@@ -158,4 +158,10 @@ export const buildAppEndpoints = API => ({
       url: `/api/applications/${appId}/sample`,
     })
   },
+
+  appChanges: async appId => {
+    return await API.get({
+      url: `/api/applications/${appId}/changes`,
+    })
+  },
 })

@@ -72,6 +72,16 @@ export enum DocumentType {
   AUDIT_LOG = "al",
 }
 
+// these are the document types which make up the core components of an app
+export const AppComponentDocuments = [
+  DocumentType.SCREEN,
+  DocumentType.AUTOMATION,
+  DocumentType.TABLE,
+  DocumentType.ROLE,
+  DocumentType.DATASOURCE,
+  DocumentType.QUERY,
+]
+
 export const StaticDatabases = {
   GLOBAL: {
     name: "global-db",
