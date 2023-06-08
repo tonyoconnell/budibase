@@ -3,6 +3,7 @@ import { datasources } from "./"
 import { cloneDeep } from "lodash/fp"
 import { API } from "api"
 import { SWITCHABLE_TYPES } from "constants/backend"
+import { appChanges } from "./appChanges"
 
 export function createTablesStore() {
   const store = writable({
@@ -65,6 +66,7 @@ export function createTablesStore() {
     replaceTable(savedTable._id, savedTable)
     await datasources.fetch()
     select(savedTable._id)
+    appChanges.setChanged(true)
     return savedTable
   }
 
@@ -76,6 +78,7 @@ export function createTablesStore() {
       tableId: table._id,
       tableRev: table._rev,
     })
+    appChanges.setChanged(true)
     replaceTable(table._id, null)
   }
 

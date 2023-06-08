@@ -23,6 +23,7 @@
   let published
 
   $: publishedUrl = published ? `${window.origin}/app${published.appUrl}` : ""
+  $: appId = $store.appId
 
   export let onOk
 
@@ -33,6 +34,8 @@
       publishModal.hide()
 
       published = await API.publishAppChanges($store.appId)
+      // just published - can set changed state to false
+      appChanges.setChanged(false)
 
       if (typeof onOk === "function") {
         await onOk()
@@ -58,7 +61,7 @@
   }
 
   onMount(async () => {
-    await appChanges.init()
+    await appChanges.init(appId)
   })
 </script>
 
@@ -84,6 +87,8 @@
   >
     The changes you have made will be published to the production version of the
     application.
+    <br />
+    Changes include: {$appChanges.docIds.join(", ")}
   </ModalContent>
 </Modal>
 

@@ -3,6 +3,7 @@ import { API } from "api"
 import { cloneDeep } from "lodash/fp"
 import { generate } from "shortid"
 import { selectedAutomation } from "builderStore"
+import { appChanges } from "stores/backend"
 
 const initialAutomationState = {
   automations: [],
@@ -62,6 +63,7 @@ const automationActions = store => ({
     const response = await store.actions.save(automation)
     await store.actions.fetch()
     store.actions.select(response._id)
+    appChanges.setChanged(true)
     return response
   },
   duplicate: async automation => {
@@ -73,6 +75,7 @@ const automationActions = store => ({
     })
     await store.actions.fetch()
     store.actions.select(response._id)
+    appChanges.setChanged(true)
     return response
   },
   save: async automation => {
@@ -90,6 +93,7 @@ const automationActions = store => ({
       }
       return state
     })
+    appChanges.setChanged(true)
     return response.automation
   },
   delete: async automation => {
@@ -108,6 +112,7 @@ const automationActions = store => ({
       }
       return state
     })
+    appChanges.setChanged(true)
     await store.actions.fetch()
   },
   updateBlockInputs: async (block, data) => {

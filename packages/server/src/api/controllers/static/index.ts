@@ -19,6 +19,17 @@ import * as pro from "@budibase/pro"
 
 const send = require("koa-send")
 
+function findHbsFiles(filename: string) {
+  const paths = [__dirname, join(__dirname, "templates")]
+  for (let path of paths) {
+    const fullPath = join(path, filename)
+    if (fs.existsSync(fullPath)) {
+      return loadHandlebarsFile(fullPath)
+    }
+  }
+  throw new Error(`Unable to find handlebars file: ${filename}`)
+}
+
 async function prepareUpload({ s3Key, bucket, metadata, file }: any) {
   const response = await objectStore.upload({
     bucket,
@@ -134,7 +145,7 @@ export const serveApp = async function (ctx: any) {
             ? objectStore.getGlobalFileUrl("settings", "logoUrl")
             : "",
       })
-      const appHbs = loadHandlebarsFile(`${__dirname}/app.hbs`)
+      const appHbs = findHbsFiles("app.hbs")
       ctx.body = await processString(appHbs, {
         head,
         body: html,
@@ -161,7 +172,7 @@ export const serveApp = async function (ctx: any) {
             : "",
       })
 
-      const appHbs = loadHandlebarsFile(`${__dirname}/app.hbs`)
+      const appHbs = findHbsFiles("app.hbs")
       ctx.body = await processString(appHbs, {
         head,
         body: html,
@@ -177,7 +188,7 @@ export const serveBuilderPreview = async function (ctx: any) {
 
   if (!env.isJest()) {
     let appId = context.getAppId()
-    const previewHbs = loadHandlebarsFile(`${__dirname}/preview.hbs`)
+    const previewHbs = findHbsFiles("preview.hbs")
     ctx.body = await processString(previewHbs, {
       clientLibPath: objectStore.clientLibraryUrl(appId!, appInfo.version),
     })
@@ -188,8 +199,16 @@ export const serveBuilderPreview = async function (ctx: any) {
 }
 
 export const serveClientLibrary = async function (ctx: any) {
-  return send(ctx, "budibase-client.js", {
-    root: join(NODE_MODULES_PATH, "@budibase", "client", "dist"),
+  const filename = "budibase-client.js"
+  const topLevelPath = join(TOP_LEVEL_PATH, "client")
+  let path
+  if (fs.existsSync(join(topLevelPath, filename))) {
+    path = topLevelPath
+  } else {
+    path = join(NODE_MODULES_PATH, "@budibase", "client", "dist")
+  }
+  return send(ctx, filename, {
+    root: path,
   })
 }
 

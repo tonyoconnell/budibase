@@ -38,6 +38,7 @@ import {
 import { makePropSafe as safe } from "@budibase/string-templates"
 import { getComponentFieldOptions } from "helpers/formFields"
 import { createBuilderWebsocket } from "builderStore/websocket"
+import { appChanges } from "stores/backend"
 
 const INITIAL_FRONTEND_STATE = {
   initialised: false,
@@ -322,6 +323,7 @@ export const getFrontendStore = () => {
           state.usedPlugins = usedPlugins
           return state
         })
+        appChanges.setChanged(true)
         return savedScreen
       },
       patch: async (patchFn, screenId) => {
@@ -333,6 +335,7 @@ export const getFrontendStore = () => {
         if (!screenId || !patchFn) {
           return
         }
+        appChanges.setChanged(true)
         return await sequentialScreenPatch(patchFn, screenId)
       },
       delete: async screens => {
@@ -374,6 +377,7 @@ export const getFrontendStore = () => {
 
           return state
         })
+        appChanges.setChanged(true)
         return null
       },
       updateSetting: async (screen, name, value) => {

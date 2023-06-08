@@ -3,10 +3,15 @@ import { AllDocsResponse, RowResponse } from "@budibase/types"
 
 const NOT_PUBLISHED_ERR = "Not published"
 
+type DocInfo = {
+  _id: string
+  _rev: string
+}
+
 async function getDocInfoFromApp(
   appId: string,
   opts?: { production?: boolean }
-) {
+): Promise<DocInfo[]> {
   // currently leaving out data - would be messy to monitor this
   let db
   const prodAppId = dbCore.getProdAppID(appId)
@@ -45,16 +50,22 @@ export async function hasDevAppChanged(
       getDocInfoFromApp(appId, { production: false }),
       getDocInfoFromApp(appId, { production: true }),
     ])
-    const docIds = []
-    for (let docInfo of devDocInfo) {
-      if (
-        !prodDocInfo.find(
-          info => info._id === docInfo._id && info._rev === docInfo._rev
-        )
-      ) {
-        docIds.push(docInfo._id)
+    const docIds: string[] = []
+    function checkDocInfo(list1: DocInfo[], list2: DocInfo[]) {
+      for (let docInfo of list1) {
+        if (
+          !list2.find(
+            info => info._id === docInfo._id && info._rev === docInfo._rev
+          )
+        ) {
+          docIds.push(docInfo._id)
+        }
       }
     }
+    // check both directions, see if any missing docs from dev info (added/updated)
+    checkDocInfo(devDocInfo, prodDocInfo)
+    // now see if any missing docs from prod info (deleted)
+    checkDocInfo(prodDocInfo, devDocInfo)
     return { changed: docIds.length !== 0, docIds }
   } catch (err: any) {
     if (err.message === NOT_PUBLISHED_ERR) {
