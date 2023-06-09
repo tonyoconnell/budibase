@@ -9,28 +9,27 @@
     notifications,
   } from "@budibase/bbui"
   import { IntegrationNames, IntegrationTypes } from "constants/backend"
-  import cloneDeep from "lodash/cloneDeepWith"
   import GoogleButton from "components/common/GoogleButton.svelte"
   import { organisation } from "stores/portal"
-  import { onDestroy, onMount } from "svelte"
-  import {
-    getDatasourceInfo,
-    saveDatasource,
-    validateDatasourceConfig,
-  } from "builderStore/datasource"
-  import cloneDeep from "lodash/cloneDeepWith"
+  import { datasources } from "stores/backend"
+  import { onMount } from "svelte"
   import IntegrationConfigForm from "../TableIntegrationMenu/IntegrationConfigForm.svelte"
   import { goto } from "@roxi/routify"
-  import { DatasourceFeature } from "@budibase/types"
-  import { API } from "api"
 
   export let integration
   export let continueSetupId = false
 
-  let datasource = cloneDeep(integration)
-  datasource.config.continueSetupId = continueSetupId
+  const getDatasource = integration => {
+    return {
+      type: "datasource",
+      schema: integration.datasource,
+      source: integration.name,
+      config: { continueSetupId },
+      plus: integration.plus,
+    }
+  }
 
-  let { schema } = datasource
+  let datasource = getDatasource(integration)
 
   $: isGoogleConfigured = !!$organisation.googleDatasourceConfigured
 
@@ -64,21 +63,13 @@
       title: `Connect your spreadsheet`,
       confirmButtonText: "Connect",
       onConfirm: async () => {
-        const checkConnection =
-          integration.features[DatasourceFeature.CONNECTION_CHECKING]
-        if (checkConnection) {
-          const resp = await validateDatasourceConfig(datasource)
-          if (!resp.connected) {
-            notifications.error(`Unable to connect - ${resp.error}`)
-            return false
-          }
-        }
-
         try {
-          datasource = await saveDatasource(datasource, {
-            tablesFilter: selectedSheets,
-            skipFetch: true,
+          const resp = await datasources.create({
+            integration,
+            fields: datasource.config,
           })
+          $goto(`./datasource/${resp._id}`)
+          notifications.success(`Datasource created successfully.`)
         } catch (err) {
           notifications.error(err?.message ?? "Error saving datasource")
           // prevent the modal from closing
@@ -169,7 +160,8 @@
     {:else if isGoogleConfigured === false}
       <Body size="S"
         >Google authentication is not enabled, please complete Google SSO
-        configuration.</Body>
+        configuration.</Body
+      >
       <Link href="/builder/portal/settings/auth">Configure Google SSO</Link>
     {/if}
   {/if}
