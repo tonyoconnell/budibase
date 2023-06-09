@@ -15,6 +15,14 @@
           "target": "build"
         }
       ]
+    },
+    "build": {
+      "dependsOn": [
+        {
+          "projects": ["@budibase/string-templates"],
+          "target": "build"
+        }
+      ]
     }
   }
 }
