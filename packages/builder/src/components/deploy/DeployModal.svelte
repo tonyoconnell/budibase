@@ -10,11 +10,12 @@
   } from "@budibase/bbui"
   import { API } from "api"
   import analytics, { Events, EventSource } from "analytics"
-  import { store } from "builderStore"
-  import { appChanges } from "stores/backend"
+  import { store, automationStore } from "builderStore"
+  import { appChanges, tables } from "stores/backend"
   import TourWrap from "../portal/onboarding/TourWrap.svelte"
   import { TOUR_STEP_KEYS } from "../portal/onboarding/tours.js"
   import { onMount } from "svelte"
+  import { get } from "svelte/store"
 
   let publishModal
   let asyncModal
@@ -63,6 +64,26 @@
   onMount(async () => {
     await appChanges.init(appId)
   })
+
+  function checkNames(ids) {
+    const screenList = get(store).screens
+    const tableList = get(tables).list
+    const automationList = get(automationStore).automations
+    const together = [...screenList, ...tableList, ...automationList]
+    const names = []
+    for (let id of ids) {
+      const found = together.find(obj => obj._id === id)
+      if (found && found.name !== "Users") {
+        const name = found.routing?.route
+          ? `screen ${found.routing.route}`
+          : found.name
+        names.push(name)
+      } else {
+        names.push("deleted resources")
+      }
+    }
+    return [...new Set(names)]
+  }
 </script>
 
 <TourWrap tourStepKey={TOUR_STEP_KEYS.BUILDER_APP_PUBLISH}>
@@ -70,7 +91,6 @@
     cta
     on:click={async () => {
       await appChanges.fetch()
-      console.log("fetched")
       publishModal.show()
     }}
     id={"builder-app-publish-button"}
@@ -88,7 +108,7 @@
     The changes you have made will be published to the production version of the
     application.
     <br />
-    Changes include: {$appChanges.docIds.join(", ")}
+    Changes include: {checkNames($appChanges.docIds).join(", ")}
   </ModalContent>
 </Modal>
 
