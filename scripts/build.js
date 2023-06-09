@@ -8,7 +8,6 @@ const path = require("path")
 
 const { build } = require("esbuild")
 
-const { default: NodeResolve } = require("@esbuild-plugins/node-resolve")
 const {
   default: TsconfigPathsPlugin,
 } = require("@esbuild-plugins/tsconfig-paths")
@@ -42,6 +41,8 @@ function runBuild(entry, outfile) {
       "koa2-ratelimit",
       "fsevents",
       "knex",
+      "pouchdb",
+      "testcontainers",
     ],
   }
 
