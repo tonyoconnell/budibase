@@ -11,136 +11,69 @@
     Modal,
   } from "@budibase/bbui"
   import { datasources, integrations, queries, tables } from "stores/backend"
-  import RestExtraConfigForm from "components/backend/DatasourceNavigator/TableIntegrationMenu/rest/RestExtraConfigForm.svelte"
-  import PlusConfigForm from "components/backend/DatasourceNavigator/TableIntegrationMenu/PlusConfigForm.svelte"
   import ICONS from "components/backend/DatasourceNavigator/icons"
   import CapitaliseRenderer from "components/common/renderers/CapitaliseRenderer.svelte"
   import { IntegrationTypes } from "constants/backend"
   import { isEqual } from "lodash"
   import { cloneDeep } from "lodash/fp"
-  import ImportRestQueriesModal from "components/backend/DatasourceNavigator/modals/ImportRestQueriesModal.svelte"
   import EditDatasourceConfig from "./_components/EditDatasourceConfig.svelte"
+  import { API } from "api"
+  import { DatasourceFeature } from "@budibase/types"
+  import TablesPanel from './_components/TablesPanel.svelte'
+  import RelationshipsPanel from './_components/RelationshipsPanel.svelte'
+  import QueriesPanel from './_components/QueriesPanel.svelte'
+  import RestHeadersPanel from './_components/rest/HeadersPanel.svelte'
+  import RestAuthenticationPanel from './_components/rest/AuthenticationPanel.svelte'
+  import RestVariablesPanel from './_components/rest/VariablesPanel.svelte'
 
-  const querySchema = {
-    name: {},
-    queryVerb: { displayName: "Method" },
-  }
+  let selectedPanel = null
+  let panelOptions = []
+  $: integration = datasource && $integrations[datasource.source]
 
-  let importQueriesModal
-  let changed = false
-  let integration, baseDatasource, datasource
-  let queryList
+  $: datasource = $datasources.selected
 
-  $: baseDatasource = $datasources.selected
-  $: queryList = $queries.list.filter(
-    query => query.datasourceId === datasource?._id
-  )
-  $: hasChanged(baseDatasource, datasource)
-  $: updateDatasource(baseDatasource)
+  $: getOptions(datasource)
 
-  const hasChanged = (base, ds) => {
-    if (base && ds) {
-      changed = !isEqual(base, ds)
-    }
-  }
-
-  const saveDatasource = async () => {
-    try {
-      // Create datasource
-      await datasources.save(datasource)
-      if (datasource?.plus) {
-        await tables.fetch()
-      }
-      await datasources.fetch()
-      notifications.success(`Datasource ${name} updated successfully.`)
-      baseDatasource = cloneDeep(datasource)
-    } catch (err) {
-      notifications.error(`Error saving datasource: ${err}`)
-    }
-  }
-
-  const updateDatasource = base => {
-    if (base) {
-      datasource = cloneDeep(base)
-      integration = $integrations[datasource.source]
+  const getOptions = (datasource) => {
+    if (datasource.plus) {
+      // Google Sheets' integration definition specifies `relationships: false` as it doesn't support relationships like other plus datasources
+      panelOptions = $integrations[datasource.source].relationships === false ? ['tables', 'queries'] : ['tables', 'relationships', 'queries']
+      selectedPanel = panelOptions.includes(selectedPanel) ? selectedPanel : 'tables'
+    } else if (datasource.source === "REST") {
+      panelOptions = ['queries', 'headers', 'authentication', 'variables']
+      selectedPanel = panelOptions.includes(selectedPanel) ? selectedPanel : 'queries'
+    } else {
+      panelOptions = ['queries']
+      selectedPanel = 'queries'
     }
   }
 </script>
 
-<Modal bind:this={importQueriesModal}>
-  {#if datasource.source === "REST"}
-    <ImportRestQueriesModal
-      createDatasource={false}
-      datasourceId={datasource._id}
-    />
-  {/if}
-</Modal>
+{#each panelOptions as panelOption}
+  <button on:click={() => selectedPanel = panelOption}>{panelOption}</button>
+{/each}
 
-{#if datasource && integration}
-  <section>
-    <Layout noPadding>
-      <Layout gap="XS" noPadding>
-        <header>
-          <svelte:component
-            this={ICONS[datasource.source]}
-            height="26"
-            width="26"
-          />
-          <Heading size="M">{$datasources.selected?.name}</Heading>
-        </header>
-      </Layout>
-      <EditDatasourceConfig {datasource} />
-      {#if datasource.plus}
-        <PlusConfigForm bind:datasource save={saveDatasource} />
-      {/if}
-      <Divider />
-      <div class="query-header">
-        <Heading size="S">Queries</Heading>
-        <div class="query-buttons">
-          {#if datasource?.source === IntegrationTypes.REST}
-            <Button secondary on:click={() => importQueriesModal.show()}>
-              Import
-            </Button>
-          {/if}
-          <Button
-            cta
-            icon="Add"
-            on:click={() => $goto(`../../query/new/${datasource._id}`)}
-          >
-            Add query
-          </Button>
-        </div>
-      </div>
-      <Body size="S">
-        To build an app using a datasource, you must first query the data. A
-        query is a request for data or information from a datasource, for
-        example a database table.
-      </Body>
-      {#if queryList && queryList.length > 0}
-        <div class="query-list">
-          <Table
-            on:click={({ detail }) => $goto(`../../query/${detail._id}`)}
-            schema={querySchema}
-            data={queryList}
-            allowEditColumns={false}
-            allowEditRows={false}
-            allowSelectRows={false}
-            customRenderers={[
-              { column: "queryVerb", component: CapitaliseRenderer },
-            ]}
-          />
-        </div>
-      {/if}
-      {#if datasource?.source === IntegrationTypes.REST}
-        <RestExtraConfigForm
-          queries={queryList}
-          bind:datasource
-          on:change={hasChanged}
-        />
-      {/if}
-    </Layout>
-  </section>
+<EditDatasourceConfig {datasource} />
+
+{#if selectedPanel === null}
+  <Body>loading...</Body>
+{:else if selectedPanel === 'tables'}
+  <TablesPanel {datasource} />
+{:else if selectedPanel === 'relationships'}
+  <RelationshipsPanel {datasource} />
+{:else if selectedPanel === 'queries'}
+  <QueriesPanel {datasource} />
+{:else if selectedPanel === 'headers'}
+  <RestHeadersPanel datasourceId={datasource._id} />
+{:else if selectedPanel === 'authentication'}
+  <RestAuthenticationPanel datasourceId={datasource._id} />
+{:else if selectedPanel === 'variables'}
+  <RestVariablesPanel datasourceId={datasource._id} />
+{:else}
+  <Body>Something went wrong</Body>
 {/if}
+
+
 
 <style>
   section {

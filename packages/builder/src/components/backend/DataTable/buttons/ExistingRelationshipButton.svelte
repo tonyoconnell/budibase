@@ -1,6 +1,6 @@
 <script>
   import { ActionButton, Modal, notifications } from "@budibase/bbui"
-  import CreateEditRelationship from "../../Datasources/CreateEditRelationship.svelte"
+  import CreateEditRelationshipModal from "../../Datasources/CreateEditRelationshipModal.svelte"
   import { datasources } from "../../../../stores/backend"
   import { createEventDispatcher } from "svelte"
 
@@ -8,7 +8,7 @@
   const dispatch = createEventDispatcher()
 
   $: datasource = findDatasource(table?._id)
-  $: plusTables = datasource?.plus
+  $: tables = datasource?.plus
     ? Object.values(datasource?.entities || {})
     : []
 
@@ -24,31 +24,27 @@
     })
   }
 
-  async function saveRelationship() {
-    try {
-      // Create datasource
-      await datasources.save(datasource)
-      notifications.success(`Relationship information saved.`)
-      dispatch("updatecolumns")
-    } catch (err) {
-      notifications.error(`Error saving relationship info: ${err}`)
-    }
+  const afterSave = ({ action }) => {
+    notifications.success(`Relationship ${action} successfully.`)
+    dispatch("updatecolumns")
+  }
+
+  const onError = (err) => {
+    notifications.error(`Error saving relationship info: ${err}`)
   }
 </script>
 
 {#if datasource}
   <div>
-    <ActionButton icon="DataCorrelated" primary quiet on:click={modal.show}>
+    <ActionButton icon="DataCorrelated" primary quiet on:click={() => modal.show({ fromTable: table })}>
       Define relationship
     </ActionButton>
   </div>
-  <Modal bind:this={modal}>
-    <CreateEditRelationship
-      {datasource}
-      save={saveRelationship}
-      close={modal.hide}
-      {plusTables}
-      selectedFromTable={table}
-    />
-  </Modal>
+  <CreateEditRelationshipModal
+    bind:this={modal}
+    {datasource}
+    {tables}
+    {afterSave}
+    {onError}
+  />
 {/if}

@@ -279,11 +279,15 @@
     datasource.entities[getTable(toId).name].schema[toRelationship.name] =
       toRelationship
 
-    await save()
+    if (originalFromColumnName) {
+      await save('updated')
+    } else {
+      await save('created')
+    }
   }
   async function deleteRelationship() {
     removeExistingRelationship()
-    await save()
+    await save('deleted')
     await tables.fetch()
     close()
   }

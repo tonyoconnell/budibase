@@ -16,4 +16,8 @@ export const hasData = (datasources, tables) =>
 export const hasDefaultData = datasources =>
   datasources.list.some(
     datasource => datasource._id === DEFAULT_BB_DATASOURCE_ID
+
   )
+
+export const findDatasource = (datasources, id) =>
+  datasources.list.find(datasource => datasource._id === id)

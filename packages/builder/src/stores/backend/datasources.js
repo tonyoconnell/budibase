@@ -1,13 +1,14 @@
 import { writable, derived, get } from "svelte/store"
 import { IntegrationTypes } from "constants/backend"
 import { queries, tables } from "./"
+import { BUDIBASE_INTERNAL_DB_ID } from "constants/backend"
 import { API } from "api"
 import { DatasourceFeature } from "@budibase/types"
 
 export function createDatasourcesStore() {
   const store = writable({
     list: [],
-    selectedDatasourceId: null,
+    selectedDatasourceId: BUDIBASE_INTERNAL_DB_ID,
     schemaError: null,
   })
 
@@ -116,7 +117,7 @@ export function createDatasourcesStore() {
       const sources = state.list.filter(
         existing => existing._id !== datasource._id
       )
-      return { list: sources, selected: null }
+      return { list: sources, selected: null, selectedDatasourceId: BUDIBASE_INTERNAL_DB_ID }
     })
     await queries.fetch()
     await tables.fetch()
