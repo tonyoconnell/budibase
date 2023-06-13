@@ -21,6 +21,7 @@
   import { findDatasource } from "stores/selectors"
 
   export let datasourceId
+  let restBindings = getRestBindings()
   $: datasource = findDatasource($datasources, datasourceId)
 
   $: {
@@ -30,14 +31,11 @@
 
   let addHeader
 
-  let parsedHeaders = runtimeToReadableMap(
-    getRestBindings(),
-    cloneDeep(datasource?.config?.defaultHeaders)
-  )
+  $: parsedHeaders = runtimeToReadableMap(restBindings, datasource?.config?.defaultHeaders))
 
   const onDefaultHeaderUpdate = headers => {
     const flatHeaders = cloneDeep(headers).reduce((acc, entry) => {
-      acc[entry.name] = readableToRuntimeBinding(getRestBindings(), entry.value)
+      acc[entry.name] = readableToRuntimeBinding(restBindings, entry.value)
       return acc
     }, {})
 
@@ -50,7 +48,7 @@
   bind:object={parsedHeaders}
   on:change={evt => onDefaultHeaderUpdate(evt.detail)}
   noAddButton
-  bindings={getRestBindings()}
+  bindings={restBindings}
 />
 <div>
   <ActionButton icon="Add" on:click={() => addHeader.addEntry()}>

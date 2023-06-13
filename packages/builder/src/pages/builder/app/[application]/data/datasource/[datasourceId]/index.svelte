@@ -49,31 +49,41 @@
   }
 </script>
 
-{#each panelOptions as panelOption}
-  <button on:click={() => selectedPanel = panelOption}>{panelOption}</button>
-{/each}
-
-<EditDatasourceConfig {datasource} />
-
-{#if selectedPanel === null}
-  <Body>loading...</Body>
-{:else if selectedPanel === 'tables'}
-  <TablesPanel {datasource} />
-{:else if selectedPanel === 'relationships'}
-  <RelationshipsPanel {datasource} />
-{:else if selectedPanel === 'queries'}
-  <QueriesPanel {datasource} />
-{:else if selectedPanel === 'headers'}
-  <RestHeadersPanel datasourceId={datasource._id} />
-{:else if selectedPanel === 'authentication'}
-  <RestAuthenticationPanel datasourceId={datasource._id} />
-{:else if selectedPanel === 'variables'}
-  <RestVariablesPanel datasourceId={datasource._id} />
-{:else}
-  <Body>Something went wrong</Body>
-{/if}
-
-
+<section>
+  <Layout noPadding>
+    <Layout gap="XS" noPadding>
+      <header>
+        <svelte:component
+          this={ICONS[datasource.source]}
+          height="26"
+          width="26"
+        />
+        <Heading size="M">{$datasources.selected?.name}</Heading>
+      </header>
+    </Layout>
+  <EditDatasourceConfig {datasource} />
+  {#each panelOptions as panelOption}
+    <button on:click={() => selectedPanel = panelOption}>{panelOption}</button>
+  {/each}
+  {#if selectedPanel === null}
+    <Body>loading...</Body>
+  {:else if selectedPanel === 'tables'}
+    <TablesPanel {datasource} />
+  {:else if selectedPanel === 'relationships'}
+    <RelationshipsPanel {datasource} />
+  {:else if selectedPanel === 'queries'}
+    <QueriesPanel {datasource} />
+  {:else if selectedPanel === 'headers'}
+    <RestHeadersPanel datasourceId={datasource._id} />
+  {:else if selectedPanel === 'authentication'}
+    <RestAuthenticationPanel datasourceId={datasource._id} />
+  {:else if selectedPanel === 'variables'}
+    <RestVariablesPanel datasourceId={datasource._id} />
+  {:else}
+    <Body>Something went wrong</Body>
+  {/if}
+  </Layout>
+</section>
 
 <style>
   section {
