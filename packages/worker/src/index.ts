@@ -25,9 +25,9 @@ import koaBody from "koa-body"
 import http from "http"
 import api from "./api"
 import * as redis from "./utilities/redis"
-const Sentry = require("@sentry/node")
+import Sentry from "@sentry/node"
 const koaSession = require("koa-session")
-const { userAgent } = require("koa-useragent")
+import { userAgent } from "koa-useragent"
 
 import destroyable from "server-destroy"
 import { initPro } from "./initPro"
