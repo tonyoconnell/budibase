@@ -73,8 +73,8 @@ export function createGroupRequest(groupData?: {
     displayName: displayName,
     meta: {
       resourceType: "Group",
-      created: new Date(),
-      lastModified: new Date(),
+      created: generator.date(),
+      lastModified: generator.date(),
     },
   }
   return group

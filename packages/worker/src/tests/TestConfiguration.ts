@@ -11,7 +11,7 @@ import * as dbConfig from "../db"
 dbConfig.init()
 import env from "../environment"
 import * as controllers from "./controllers"
-const supertest = require("supertest")
+import supertest from "supertest"
 import { Config } from "../constants"
 import {
   users,
@@ -36,7 +36,7 @@ import API from "./api"
 
 class TestConfiguration {
   server: any
-  request: any
+  request?: supertest.SuperTest<supertest.Test>
   api: API
   tenantId: string
   user?: User
@@ -253,8 +253,8 @@ class TestConfiguration {
   }
 
   async getUser(email: string): Promise<User> {
-    return context.doInTenant(this.getTenantId(), () => {
-      return users.getGlobalUserByEmail(email)
+    return context.doInTenant(this.getTenantId(), async () => {
+      return (await users.getGlobalUserByEmail(email))!
     })
   }
 
