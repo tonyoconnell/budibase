@@ -5,7 +5,6 @@ import { notifications } from "@budibase/bbui"
 
 export const createValidationStore = () => {
   const DEFAULT = {
-    values: {},
     errors: {},
     touched: {},
     valid: false,
@@ -34,22 +33,12 @@ export const createValidationStore = () => {
       case "email":
         propertyValidator = string().email().nullable()
         break
-      case "password":
-        propertyValidator = string().nullable()
-        break
       default:
         propertyValidator = string().nullable()
     }
 
     if (required) {
       propertyValidator = propertyValidator.required()
-    }
-
-    // We want to do this after the possible required validation, to prioritise the required error
-    switch (type) {
-      case "password":
-        propertyValidator = propertyValidator.min(8)
-        break
     }
 
     validator[propertyName] = propertyValidator
@@ -150,6 +139,5 @@ export const createValidationStore = () => {
     check,
     addValidator,
     addValidatorType,
-    observe,
   }
 }
