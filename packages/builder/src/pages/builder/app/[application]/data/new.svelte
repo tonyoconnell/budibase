@@ -4,14 +4,13 @@
     tables,
     datasources,
     sortedIntegrations as integrations,
-    integrations as integrationsStore,
   } from "stores/backend"
 
-  import { IntegrationTypes } from "constants/backend"
-  import { Icon, Modal, notifications, Heading, Body } from "@budibase/bbui"
+  import { hasData } from "stores/selectors"
+  import { Icon, notifications, Heading, Body } from "@budibase/bbui"
   import { params, goto } from "@roxi/routify"
-  import CreateTableModal from "components/backend/TableNavigator/modals/CreateTableModal.svelte"
-  import CreateExternalDatasourceModal from "./_CreateExternalDatasourceModal.svelte"
+  import CreateExternalDatasourceModal from "./_components/CreateExternalDatasourceModal/index.svelte"
+  import CreateInternalTableModal from "./_components/CreateInternalTableModal.svelte"
   import DatasourceOption from "./_components/DatasourceOption.svelte"
   import IntegrationIcon from "components/backend/DatasourceNavigator/IntegrationIcon.svelte"
   import ICONS from "components/backend/DatasourceNavigator/icons/index.js"
@@ -19,38 +18,13 @@
 
   let internalTableModal
   let externalDatasourceModal
-  let disabled = false
-  let promptUpload = false
-  $: hasData = $datasources.list.length > 1 || $tables.list.length > 1
 
-  const getGoogleSetupId = params => {
-    const id = params["?continue_google_setup"]
-    $goto("./new")
-    return id
-  }
-
-  const handleOpenGoogle = (
-    setupId,
-    integrationsStore,
-    externalDatasourceModal
-  ) => {
-    if (setupId && integrationsStore && externalDatasourceModal) {
-      externalDatasourceModal.show({
-        ...integrationsStore[IntegrationTypes.GOOGLE_SHEETS],
-        name: IntegrationTypes.GOOGLE_SHEETS,
-      })
-    }
-  }
-
-  $: googleSetupId = getGoogleSetupId($params)
-  $: handleOpenGoogle(
-    googleSetupId,
-    $integrationsStore,
-    externalDatasourceModal
-  )
+  let sampleDataLoading = false
+  let externalDatasourceLoading = false
+  $: disabled = sampleDataLoading || externalDatasourceLoading
 
   const createSampleData = async () => {
-    disabled = true
+    sampleDataLoading = true
 
     try {
       await API.addSampleData($params.application)
@@ -58,43 +32,22 @@
       await datasources.fetch()
       $goto("./table")
     } catch (e) {
-      disabled = false
+      sampleDataLoading = false
       notifications.error("Error creating datasource")
     }
   }
-
-  const handleInternalTable = () => {
-    promptUpload = false
-    internalTableModal.show()
-  }
-
-  const handleDataImport = () => {
-    promptUpload = true
-    internalTableModal.show()
-  }
-
-  const handleInternalTableSave = table => {
-    notifications.success(`Table created successfully.`)
-    $goto(`./table/${table._id}`)
-  }
 </script>
 
-<Modal bind:this={internalTableModal}>
-  <CreateTableModal {promptUpload} afterSave={handleInternalTableSave} />
-</Modal>
+<CreateInternalTableModal bind:this={internalTableModal} />
 
 <CreateExternalDatasourceModal
-  {googleSetupId}
-  on:hide={() => {
-    googleSetupId = false
-  }}
-  bind:disabled
+  bind:loading={externalDatasourceLoading}
   bind:this={externalDatasourceModal}
 />
 
 <div class="page">
   <div class="closeButton">
-    {#if hasData}
+    {#if hasData($datasources, $tables)}
       <Icon hoverable name="Close" on:click={$goto("./table")} />
     {/if}
   </div>
@@ -115,7 +68,7 @@
 
   <div class="options">
     <DatasourceOption
-      on:click={handleInternalTable}
+      on:click={internalTableModal.show}
       title="Create new table"
       description="Non-relational"
       {disabled}
@@ -131,7 +84,7 @@
       <svelte:component this={ICONS.BUDIBASE} height="20" width="20" />
     </DatasourceOption>
     <DatasourceOption
-      on:click={handleDataImport}
+      on:click={() => internalTableModal.show({ promptUpload: true })}
       title="Upload data"
       description="Non-relational"
       {disabled}

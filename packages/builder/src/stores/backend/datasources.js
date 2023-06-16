@@ -4,6 +4,18 @@ import { queries, tables } from "./"
 import { API } from "api"
 import { DatasourceFeature } from "@budibase/types"
 
+export class ImportTableError extends Error {
+  constructor(message) {
+    super(message)
+    const [title, description] = message.split(" - ")
+
+    this.name = "TableSelectionError"
+    // Capitalize the first character of both the title and description
+    this.title = title[0].toUpperCase() + title.substr(1)
+    this.description = description[0].toUpperCase() + description.substr(1)
+  }
+}
+
 export function createDatasourcesStore() {
   const store = writable({
     list: [],
@@ -56,26 +68,19 @@ export function createDatasourcesStore() {
   }
 
   const updateSchema = async (datasource, tablesFilter) => {
-    const response = await API.buildDatasourceSchema({
-      datasourceId: datasource?._id,
-      tablesFilter,
-    })
-    return updateDatasource(response)
-  }
-
-  const save = async (body, { fetchSchema, tablesFilter } = {}) => {
-    if (fetchSchema == null) {
-      fetchSchema = false
-    }
-    let response
-    if (body._id) {
-      response = await API.updateDatasource(body)
-    } else {
-      response = await API.createDatasource({
-        datasource: body,
-        fetchSchema,
+    try {
+      const response = await API.buildDatasourceSchema({
+        datasourceId: datasource?._id,
         tablesFilter,
       })
+      updateDatasource(response)
+    } catch (e) {
+      // buildDatasourceSchema call returns user presentable errors with two parts divided with a " - ".
+      if (e.message.split(" - ").length === 2) {
+        throw new ImportTableError(e.message)
+      } else {
+        throw e
+      }
     }
   }
 
@@ -91,7 +96,6 @@ export function createDatasourcesStore() {
       config: fields,
       name: `${integration.friendlyName}-${sourceCount(integration.name) + 1}`,
       plus: integration.plus && integration.name !== IntegrationTypes.REST,
->>>>>>> 98bc709d7f (Refactor datasource creation modal)
     }
 
     if (integration.features?.[DatasourceFeature.CONNECTION_CHECKING]) {
@@ -167,6 +171,11 @@ export function createDatasourcesStore() {
     }
   }
 
+  const getTableNames = async datasource => {
+    const info = await API.fetchInfoForDatasource(datasource)
+    return info.tableNames || []
+  }
+
   return {
     subscribe: derivedStore.subscribe,
     fetch,
@@ -178,6 +187,7 @@ export function createDatasourcesStore() {
     delete: deleteDatasource,
     removeSchemaError,
     replaceDatasource,
+    getTableNames,
   }
 }
 
