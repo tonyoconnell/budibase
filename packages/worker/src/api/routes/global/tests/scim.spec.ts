@@ -10,8 +10,6 @@ import {
 import { TestConfiguration } from "../../../../tests"
 import { events } from "@budibase/backend-core"
 
-mocks.licenses.useScimIntegration()
-
 describe("scim", () => {
   beforeEach(async () => {
     jest.resetAllMocks()

@@ -61,7 +61,7 @@ export function createGroupRequest(groupData?: {
   externalId?: string
   displayName?: string
 }) {
-  const { externalId = uuid(), displayName = generator.word() } =
+  const { externalId = uuid(), displayName = generator.word({ length: 10 }) } =
     groupData || {}
 
   const group: ScimCreateGroupRequest = {
