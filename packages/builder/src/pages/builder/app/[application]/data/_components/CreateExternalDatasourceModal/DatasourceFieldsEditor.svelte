@@ -1,6 +1,6 @@
 <script>
   import { Body, Layout, ModalContent } from "@budibase/bbui"
-  import IntegrationConfigForm from "./IntegrationConfigForm.svelte"
+  import DatasourceConfigForm from "components/backend/Datasources/DatasourceConfigForm.svelte"
 
   export let isLoading
   export let integration
@@ -23,7 +23,7 @@
       Connect your database to Budibase using the config below.
     </Body>
   </Layout>
-  <IntegrationConfigForm
+  <DatasourceConfigForm
     {integration}
     bind:config={fields}
     creating={true}
