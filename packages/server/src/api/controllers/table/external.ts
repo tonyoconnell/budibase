@@ -3,13 +3,7 @@ import {
   breakExternalTableId,
 } from "../../../integrations/utils"
 import { FieldTypes } from "../../../constants"
-import {
-  generateForeignKey,
-  generateJunctionTableName,
-  foreignKeyStructure,
-  hasTypeChanged,
-  setStaticSchemas,
-} from "./utils"
+import { hasTypeChanged, setStaticSchemas } from "./utils"
 import { makeExternalQuery } from "../../../integrations/base/query"
 import { handleRequest } from "../row/external"
 import { events, context } from "@budibase/backend-core"
@@ -87,7 +81,11 @@ function generateManyLinkSchema(
   }
   const primary = table.name + table.primary[0]
   const relatedPrimary = relatedTable.name + relatedTable.primary[0]
-  const jcTblName = generateJunctionTableName(column, table, relatedTable)
+  const jcTblName = sdk.tables.generateJunctionTableName(
+    column,
+    table,
+    relatedTable
+  )
   // first create the new table
   const junctionTable = {
     _id: buildExternalTableId(datasource._id!, jcTblName),
@@ -95,11 +93,11 @@ function generateManyLinkSchema(
     primary: [primary, relatedPrimary],
     constrained: [primary, relatedPrimary],
     schema: {
-      [primary]: foreignKeyStructure(primary, {
+      [primary]: sdk.tables.foreignKeyStructure(primary, {
         toTable: table.name,
         toKey: table.primary[0],
       }),
-      [relatedPrimary]: foreignKeyStructure(relatedPrimary, {
+      [relatedPrimary]: sdk.tables.foreignKeyStructure(relatedPrimary, {
         toTable: relatedTable.name,
         toKey: relatedTable.primary[0],
       }),
@@ -124,7 +122,7 @@ function generateLinkSchema(
   const isOneSide = type === RelationshipTypes.ONE_TO_MANY
   const primary = isOneSide ? relatedTable.primary[0] : table.primary[0]
   // generate a foreign key
-  const foreignKey = generateForeignKey(column, relatedTable)
+  const foreignKey = sdk.tables.generateForeignKey(column, relatedTable)
   column.relationshipType = type
   column.foreignKey = isOneSide ? foreignKey : primary
   column.fieldName = isOneSide ? primary : foreignKey
@@ -315,13 +313,13 @@ export async function destroy(ctx: UserCtx) {
   const operation = Operation.DELETE_TABLE
   if (tables) {
     await makeTableRequest(datasource, operation, tableToDelete, tables)
-    cleanupRelationships(tableToDelete, tables)
+    sdk.tables.cleanupRelationships(tableToDelete, tables)
     delete tables[tableToDelete.name]
     datasource.entities = tables
+    sdk.tables.cleanupRelationships(tableToDelete, tables)
   }
 
-  sdk.tables.cleanupRelationships(tableToDelete, tables)
-  delete datasource.entities[tableToDelete.name]
+  delete datasource.entities![tableToDelete.name]
   await db.put(datasource)
 
   // Since tables are stored inside datasources, we need to notify clients

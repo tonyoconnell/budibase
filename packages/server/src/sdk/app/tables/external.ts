@@ -109,7 +109,7 @@ export function generateLinkSchema(
   column: FieldSchema,
   table: Table,
   relatedTable: Table,
-  type: string
+  type: RelationshipTypes
 ) {
   if (!table.primary || !relatedTable.primary) {
     throw new Error("Unable to generate link schema, no primary keys")
