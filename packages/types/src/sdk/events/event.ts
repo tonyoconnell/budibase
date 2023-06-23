@@ -3,6 +3,11 @@ import { Group, Identity } from "./identification"
 
 export enum Event {
   // USER
+  /**
+   * user count:
+   *  - event: user:created - user:deleted
+   *  - db: <tenant>_global-db - us_*
+   */
   USER_CREATED = "user:created",
   USER_UPDATED = "user:updated",
   USER_DELETED = "user:deleted",
@@ -11,6 +16,14 @@ export enum Event {
   USER_ONBOARDING_COMPLETE = "user:onboarding:complete",
 
   // USER / PERMISSIONS
+  /**
+   * admin user count:
+   *  - event: user:admin:assigned - user:admin:removed
+   *  - db: <tenant>_global-db - us_* - check for doc.admin.global = true
+   *
+   * builder user count:
+   *  - as above - check for doc.builder.global = true
+   */
   USER_PERMISSION_ADMIN_ASSIGNED = "user:admin:assigned",
   USER_PERMISSION_ADMIN_REMOVED = "user:admin:removed",
   USER_PERMISSION_BUILDER_ASSIGNED = "user:builder:assigned",
@@ -30,10 +43,20 @@ export enum Event {
   USER_DATA_COLLABORATION = "user:data:collaboration",
 
   // EMAIL
+  /**
+   * smtp created:
+   *  - event: smtp:created
+   *  - db: <tenant>_global-db - config_smtp
+   */
   EMAIL_SMTP_CREATED = "email:smtp:created",
   EMAIL_SMTP_UPDATED = "email:smtp:updated",
 
   // AUTH
+  /**
+   * sso created:
+   *  - event: auth:sso:created
+   *  - db: <tenant>_global-db - config_google OR config_oidc
+   */
   AUTH_SSO_CREATED = "auth:sso:created",
   AUTH_SSO_UPDATED = "auth:sso:updated",
   AUTH_SSO_ACTIVATED = "auth:sso:activated",
@@ -42,6 +65,11 @@ export enum Event {
   AUTH_LOGOUT = "auth:logout",
 
   // ORG
+  /**
+   * org_name_updated:
+   *  - event: org:info:name:updated
+   *  - db: <tenant>_global-db - config_settings - doc.config.company !== "Budibase"
+   */
   ORG_NAME_UPDATED = "org:info:name:updated",
   ORG_LOGO_UPDATED = "org:info:logo:updated",
   ORG_PLATFORM_URL_UPDATED = "org:platformurl:updated",
@@ -57,9 +85,19 @@ export enum Event {
   ANALYTICS_OPT_IN = "analytics:opt:in",
 
   // APP
+  /**
+   * app created:
+   *  - event: app:created - app:deleted
+   *  - db: app_dev_<tenantId>_<appId> - app_metadata
+   */
   APP_CREATED = "app:created",
   APP_UPDATED = "app:updated",
   APP_DELETED = "app:deleted",
+  /**
+   * published apps:
+   *  - event: app:published - app:unpublished
+   *  - db: app_<tenantId>_<appId>- app_metadata // no "dev"
+   */
   APP_PUBLISHED = "app:published",
   APP_UNPUBLISHED = "app:unpublished",
   APP_TEMPLATE_IMPORTED = "app:template:imported",
@@ -70,6 +108,11 @@ export enum Event {
   APP_EXPORTED = "app:exported",
 
   // ROLE
+  /**
+   * custom roles:
+   *  - event: role:created - role:deleted
+   *  - db: app_dev_<tenantId>_<appId> - role_*
+   */
   ROLE_CREATED = "role:created",
   ROLE_UPDATED = "role:updated",
   ROLE_DELETED = "role:deleted",
@@ -82,11 +125,21 @@ export enum Event {
   SERVED_APP_PREVIEW = "served:app:preview",
 
   // DATASOURCE
+  /**
+   * datasources:
+   *  - event: datasource:created - datasource:deleted
+   *  - db: app_dev_<tenantId>_<appId> - datasource_*
+   */
   DATASOURCE_CREATED = "datasource:created",
   DATASOURCE_UPDATED = "datasource:updated",
   DATASOURCE_DELETED = "datasource:deleted",
 
   // QUERY
+  /**
+   * queries:
+   *  - event: query:created - query:deleted
+   *  - db: app_dev_<tenantId>_<appId> - query_*
+   */
   QUERY_CREATED = "query:created",
   QUERY_UPDATED = "query:updated",
   QUERY_DELETED = "query:deleted",
@@ -95,6 +148,12 @@ export enum Event {
   QUERY_PREVIEWED = "query:previewed",
 
   // TABLE
+  /**
+   * tables:
+   *  - event: table:created - table:deleted
+   *  - db: app_dev_<tenantId>_<appId> - ta_*
+   *  note: the ta_users built in - I'm not sure if this will count as an event, best to check manually.
+   */
   TABLE_CREATED = "table:created",
   TABLE_UPDATED = "table:updated",
   TABLE_DELETED = "table:deleted",
@@ -123,6 +182,11 @@ export enum Event {
   COMPONENT_DELETED = "component:deleted",
 
   // SCREEN
+  /**
+   * screens:
+   *  - event: screen:created - screen:deleted
+   *  - db: app_dev_<tenantId>_<appId> - screen_*
+   */
   SCREEN_CREATED = "screen:created",
   SCREEN_DELETED = "screen:deleted",
 
@@ -131,6 +195,11 @@ export enum Event {
   LAYOUT_DELETED = "layout:deleted",
 
   // AUTOMATION
+  /**
+   * automations:
+   *  - event: automation:created - automation:deleted
+   *  - db: app_dev_<tenantId>_<appId> - au_*
+   */
   AUTOMATION_CREATED = "automation:created",
   AUTOMATION_DELETED = "automation:deleted",
   AUTOMATION_TESTED = "automation:tested",
@@ -149,6 +218,11 @@ export enum Event {
   LICENSE_PORTAL_OPENED = "license:portal:opened",
 
   // ACCOUNT
+  /**
+   * accounts:
+   *  - event: account:created - account:deleted
+   *  - db: dynamo accounts table
+   */
   ACCOUNT_CREATED = "account:created",
   ACCOUNT_DELETED = "account:deleted",
   ACCOUNT_VERIFIED = "account:verified",
@@ -162,6 +236,11 @@ export enum Event {
   INSTALLATION_BACKFILL_FAILED = "installation:backfill:failed",
 
   // USER
+  /**
+   * user groups:
+   *  - event: user_group:created - user_group:deleted
+   *  - db: <tenant>_global-db - gr_*
+   */
   USER_GROUP_CREATED = "user_group:created",
   USER_GROUP_UPDATED = "user_group:updated",
   USER_GROUP_DELETED = "user_group:deleted",
@@ -171,6 +250,11 @@ export enum Event {
   USER_GROUP_ONBOARDING = "user_group:onboarding_added",
 
   // PLUGIN
+  /**
+   * plugins:
+   *  - event: plugin:imported - plugin:deleted
+   *  - db: <tenant>_global-db - plg_*
+   */
   PLUGIN_INIT = "plugin:init",
   PLUGIN_IMPORTED = "plugin:imported",
   PLUGIN_DELETED = "plugin:deleted",
