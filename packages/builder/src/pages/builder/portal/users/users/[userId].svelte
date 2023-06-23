@@ -2,7 +2,6 @@
   import { goto, url } from "@roxi/routify"
   import {
     ActionMenu,
-    Avatar,
     Button,
     Layout,
     Heading,
@@ -25,7 +24,7 @@
   import UserGroupPicker from "components/settings/UserGroupPicker.svelte"
   import DeleteUserModal from "./_components/DeleteUserModal.svelte"
   import GroupIcon from "../groups/_components/GroupIcon.svelte"
-  import { Constants } from "@budibase/frontend-core"
+  import { Constants, UserAvatar } from "@budibase/frontend-core"
   import { Breadcrumbs, Breadcrumb } from "components/portal/page"
   import RemoveGroupTableRenderer from "./_components/RemoveGroupTableRenderer.svelte"
   import GroupNameTableRenderer from "../groups/_components/GroupNameTableRenderer.svelte"
@@ -86,13 +85,11 @@
   let user
   let loaded = false
 
-  const scimEnabled = $features.isScimEnabled
-
+  $: scimEnabled = $features.isScimEnabled
   $: isSSO = !!user?.provider
   $: readonly = !$auth.isAdmin || scimEnabled
   $: privileged = user?.admin?.global || user?.builder?.global
   $: nameLabel = getNameLabel(user)
-  $: initials = getInitials(nameLabel)
   $: filteredGroups = getFilteredGroups($groups, searchTerm)
   $: availableApps = getAvailableApps($apps, privileged, user?.roles)
   $: userGroups = $groups.filter(x => {
@@ -149,17 +146,6 @@
       label = lastName
     }
     return label
-  }
-
-  const getInitials = nameLabel => {
-    if (!nameLabel) {
-      return "?"
-    }
-    return nameLabel
-      .split(" ")
-      .slice(0, 2)
-      .map(x => x[0])
-      .join("")
   }
 
   async function updateUserFirstName(evt) {
@@ -239,7 +225,7 @@
 
     <div class="title">
       <div class="user-info">
-        <Avatar size="XXL" {initials} />
+        <UserAvatar size="XXL" {user} showTooltip={false} />
         <div class="subtitle">
           <Heading size="M">{nameLabel}</Heading>
           {#if nameLabel !== user?.email}

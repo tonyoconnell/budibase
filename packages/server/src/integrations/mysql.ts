@@ -4,9 +4,11 @@ import {
   QueryType,
   QueryJson,
   SqlQuery,
-  Table,
+  ExternalTable,
   TableSchema,
   DatasourcePlus,
+  DatasourceFeature,
+  ConnectionInfo,
 } from "@budibase/types"
 import {
   getSqlQuery,
@@ -20,18 +22,11 @@ import { NUMBER_REGEX } from "../utilities"
 import Sql from "./base/sql"
 import { MySQLColumn } from "./base/types"
 
-const mysql = require("mysql2/promise")
+import mysql from "mysql2/promise"
 
-interface MySQLConfig {
-  host: string
-  port: number
-  user: string
-  password: string
+interface MySQLConfig extends mysql.ConnectionOptions {
   database: string
-  ssl?: { [key: string]: any }
   rejectUnauthorized: boolean
-  typeCast: Function
-  multipleStatements: boolean
 }
 
 const SCHEMA: Integration = {
@@ -41,6 +36,11 @@ const SCHEMA: Integration = {
   type: "Relational",
   description:
     "MySQL Database Service is a fully managed database service to deploy cloud-native applications. ",
+  features: {
+    [DatasourceFeature.CONNECTION_CHECKING]: true,
+    [DatasourceFeature.FETCH_TABLE_NAMES]: true,
+    [DatasourceFeature.EXPORT_SCHEMA]: true,
+  },
   datasource: {
     host: {
       type: DatasourceFieldType.STRING,
@@ -92,9 +92,7 @@ const SCHEMA: Integration = {
   },
 }
 
-const TimezoneAwareDateTypes = ["timestamp"]
-
-function bindingTypeCoerce(bindings: any[]) {
+export function bindingTypeCoerce(bindings: any[]) {
   for (let i = 0; i < bindings.length; i++) {
     const binding = bindings[i]
     if (typeof binding !== "string") {
@@ -112,7 +110,12 @@ function bindingTypeCoerce(bindings: any[]) {
       dayjs(binding).isValid() &&
       !binding.includes(",")
     ) {
-      bindings[i] = dayjs(binding).toDate()
+      let value: any
+      value = new Date(binding)
+      if (isNaN(value)) {
+        value = binding
+      }
+      bindings[i] = value
     }
   }
   return bindings
@@ -120,8 +123,8 @@ function bindingTypeCoerce(bindings: any[]) {
 
 class MySQLIntegration extends Sql implements DatasourcePlus {
   private config: MySQLConfig
-  private client: any
-  public tables: Record<string, Table> = {}
+  private client?: mysql.Connection
+  public tables: Record<string, ExternalTable> = {}
   public schemaErrors: Record<string, string> = {}
 
   constructor(config: MySQLConfig) {
@@ -134,7 +137,8 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
     if (
       config.rejectUnauthorized != null &&
       !config.rejectUnauthorized &&
-      config.ssl
+      config.ssl &&
+      typeof config.ssl !== "string"
     ) {
       config.ssl.rejectUnauthorized = config.rejectUnauthorized
     }
@@ -160,6 +164,22 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
     }
   }
 
+  async testConnection() {
+    const response: ConnectionInfo = {
+      connected: false,
+    }
+    try {
+      const [result] = await this.internalQuery(
+        { sql: "SELECT 1+1 AS checkRes" },
+        { connect: true }
+      )
+      response.connected = result?.checkRes == 2
+    } catch (e: any) {
+      response.error = e.message as string
+    }
+    return response
+  }
+
   getBindingIdentifier(): string {
     return "?"
   }
@@ -173,7 +193,7 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
   }
 
   async disconnect() {
-    await this.client.end()
+    await this.client!.end()
   }
 
   async internalQuery(
@@ -192,31 +212,25 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
         ? baseBindings
         : bindingTypeCoerce(baseBindings)
       // Node MySQL is callback based, so we must wrap our call in a promise
-      const response = await this.client.query(query.sql, bindings)
+      const response = await this.client!.query(query.sql, bindings)
       return response[0]
     } finally {
-      if (opts?.connect) {
+      if (opts?.connect && this.client) {
         await this.disconnect()
       }
     }
   }
 
-  async buildSchema(datasourceId: string, entities: Record<string, Table>) {
-    const tables: { [key: string]: Table } = {}
-    const database = this.config.database
+  async buildSchema(
+    datasourceId: string,
+    entities: Record<string, ExternalTable>
+  ) {
+    const tables: { [key: string]: ExternalTable } = {}
     await this.connect()
 
     try {
       // get the tables first
-      const tablesResp: Record<string, string>[] = await this.internalQuery(
-        { sql: "SHOW TABLES;" },
-        { connect: false }
-      )
-      const tableNames: string[] = tablesResp.map(
-        (obj: any) =>
-          obj[`Tables_in_${database}`] ||
-          obj[`Tables_in_${database.toLowerCase()}`]
-      )
+      const tableNames = await this.queryTableNames()
       for (let tableName of tableNames) {
         const primaryKeys = []
         const schema: TableSchema = {}
@@ -229,13 +243,15 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
           if (column.Key === "PRI" && primaryKeys.indexOf(column.Key) === -1) {
             primaryKeys.push(columnName)
           }
-          const constraints = {
-            presence: column.Null !== "YES",
-          }
+          const hasDefault = column.Default != null
           const isAuto: boolean =
             typeof column.Extra === "string" &&
             (column.Extra === "auto_increment" ||
               column.Extra.toLowerCase().includes("generated"))
+          const required = column.Null !== "YES"
+          const constraints = {
+            presence: required && !isAuto && !hasDefault,
+          }
           schema[columnName] = {
             name: columnName,
             autocolumn: isAuto,
@@ -247,6 +263,7 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
         if (!tables[tableName]) {
           tables[tableName] = {
             _id: buildExternalTableId(datasourceId, tableName),
+            sourceId: datasourceId,
             primary: primaryKeys,
             name: tableName,
             schema,
@@ -259,6 +276,28 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
     const final = finaliseExternalTables(tables, entities)
     this.tables = final.tables
     this.schemaErrors = final.errors
+  }
+
+  async queryTableNames() {
+    const database = this.config.database
+    const tablesResp: Record<string, string>[] = await this.internalQuery(
+      { sql: "SHOW TABLES;" },
+      { connect: false }
+    )
+    return tablesResp.map(
+      (obj: any) =>
+        obj[`Tables_in_${database}`] ||
+        obj[`Tables_in_${database.toLowerCase()}`]
+    )
+  }
+
+  async getTableNames() {
+    await this.connect()
+    try {
+      return this.queryTableNames()
+    } finally {
+      await this.disconnect()
+    }
   }
 
   async create(query: SqlQuery | string) {
@@ -288,6 +327,36 @@ class MySQLIntegration extends Sql implements DatasourcePlus {
       return await this.queryWithReturning(json, queryFn)
     } finally {
       await this.disconnect()
+    }
+  }
+
+  async getExternalSchema() {
+    try {
+      const [databaseResult] = await this.internalQuery({
+        sql: `SHOW CREATE DATABASE ${this.config.database}`,
+      })
+      let dumpContent = [databaseResult["Create Database"]]
+
+      const tablesResult = await this.internalQuery({
+        sql: `SHOW TABLES`,
+      })
+
+      for (const row of tablesResult) {
+        const tableName = row[`Tables_in_${this.config.database}`]
+
+        const createTableResults = await this.internalQuery({
+          sql: `SHOW CREATE TABLE \`${tableName}\``,
+        })
+
+        const createTableStatement = createTableResults[0]["Create Table"]
+
+        dumpContent.push(createTableStatement)
+      }
+
+      const schema = dumpContent.join("\n")
+      return schema
+    } finally {
+      this.disconnect()
     }
   }
 }

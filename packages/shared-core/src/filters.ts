@@ -54,13 +54,8 @@ export const getValidOperatorsForType = (
     ops = stringOps.concat([Op.MoreThan, Op.LessThan])
   }
 
-  // Filter out "like" for internal tables
-  const externalTable = datasource?.tableId?.includes("datasource_plus")
-  if (datasource?.type === "table" && !externalTable) {
-    ops = ops.filter(x => x !== Op.Like)
-  }
-
   // Only allow equal/not equal for _id in SQL tables
+  const externalTable = datasource?.tableId?.includes("datasource_plus")
   if (field === "_id" && externalTable) {
     ops = [Op.Equals, Op.NotEquals, Op.In]
   }
@@ -333,8 +328,8 @@ export const runLuceneQuery = (docs: any[], query?: Query) => {
       return (
         docValue == null ||
         docValue === "" ||
-        docValue < testValue.low ||
-        docValue > testValue.high
+        +docValue < testValue.low ||
+        +docValue > testValue.high
       )
     }
   )
@@ -459,4 +454,20 @@ export const luceneLimit = (docs: any[], limit: string) => {
     return docs
   }
   return docs.slice(0, numLimit)
+}
+
+export const hasFilters = (query?: Query) => {
+  if (!query) {
+    return false
+  }
+  const skipped = ["allOr"]
+  for (let [key, value] of Object.entries(query)) {
+    if (skipped.includes(key) || typeof value !== "object") {
+      continue
+    }
+    if (Object.keys(value).length !== 0) {
+      return true
+    }
+  }
+  return false
 }

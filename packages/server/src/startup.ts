@@ -10,12 +10,13 @@ import fs from "fs"
 import { watch } from "./watch"
 import * as automations from "./automations"
 import * as fileSystem from "./utilities/fileSystem"
-import eventEmitter from "./events"
+import { default as eventEmitter, init as eventInit } from "./events"
 import * as migrations from "./migrations"
 import * as bullboard from "./automations/bullboard"
 import * as pro from "@budibase/pro"
 import * as api from "./api"
 import sdk from "./sdk"
+import { initialise as initialiseWebsockets } from "./websockets"
 
 let STARTUP_RAN = false
 
@@ -63,6 +64,8 @@ export async function startup(app?: any, server?: any) {
   eventEmitter.emitPort(env.PORT)
   fileSystem.init()
   await redis.init()
+  eventInit()
+  initialiseWebsockets(app, server)
 
   // run migrations on startup if not done via http
   // not recommended in a clustered environment

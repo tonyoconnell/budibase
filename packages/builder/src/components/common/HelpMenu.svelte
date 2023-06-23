@@ -13,12 +13,7 @@
 
 <div bind:this={popoverAnchor} class="help">
   <button class="openMenu" on:click={show}>Help</button>
-  <Popover
-    class="helpMenuPopoverOverride"
-    bind:show
-    bind:hide
-    anchor={popoverAnchor}
-  >
+  <Popover maxHeight={1000} bind:show bind:hide anchor={popoverAnchor}>
     <nav class="helpMenu">
       <div class="header">
         <Heading size="XS">Help resources</Heading>
@@ -88,7 +83,7 @@
   .help {
     z-index: 2;
     position: absolute;
-    bottom: var(--spacing-xl);
+    bottom: 24px;
     right: 24px;
   }
 

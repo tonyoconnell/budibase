@@ -1,50 +1,54 @@
 import env from "../../environment"
-import packageJson from "../../../package.json"
 import {
+  createAllSearchIndex,
   createLinkView,
   createRoutingView,
-  createAllSearchIndex,
 } from "../../db/views/staticViews"
-import { createApp, deleteApp } from "../../utilities/fileSystem"
 import {
+  backupClientLibrary,
+  createApp,
+  deleteApp,
+  revertClientLibrary,
+  updateClientLibrary,
+} from "../../utilities/fileSystem"
+import {
+  AppStatus,
+  DocumentType,
   generateAppID,
+  generateDevAppID,
   getLayoutParams,
   getScreenParams,
-  generateDevAppID,
-  DocumentType,
-  AppStatus,
 } from "../../db/utils"
 import {
-  db as dbCore,
-  roles,
   cache,
-  tenancy,
   context,
+  db as dbCore,
+  env as envCore,
+  ErrorCode,
   events,
   migrations,
   objectStore,
-  ErrorCode,
+  roles,
+  tenancy,
 } from "@budibase/backend-core"
 import { USERS_TABLE_SCHEMA } from "../../constants"
-import { buildDefaultDocs } from "../../db/defaultData/datasource_bb_default"
-import { removeAppFromUserRoles } from "../../utilities/workerRequests"
-import { stringToReadStream, isQsTrue } from "../../utilities"
-import { getLocksById } from "../../utilities/redis"
 import {
-  updateClientLibrary,
-  backupClientLibrary,
-  revertClientLibrary,
-} from "../../utilities/fileSystem"
+  buildDefaultDocs,
+  DEFAULT_BB_DATASOURCE_ID,
+} from "../../db/defaultData/datasource_bb_default"
+import { removeAppFromUserRoles } from "../../utilities/workerRequests"
+import { stringToReadStream } from "../../utilities"
+import { doesUserHaveLock, getLocksById } from "../../utilities/redis"
 import { cleanupAutomations } from "../../automations/utils"
 import { checkAppMetadata } from "../../automations/logging"
 import { getUniqueRows } from "../../utilities/usageQuota/rows"
-import { quotas, groups } from "@budibase/pro"
+import { groups, licensing, quotas } from "@budibase/pro"
 import {
   App,
   Layout,
-  Screen,
   MigrationType,
-  Database,
+  PlanType,
+  Screen,
   UserCtx,
 } from "@budibase/types"
 import { BASE_LAYOUT_PROP_IDS } from "../../constants/layouts"
@@ -111,11 +115,18 @@ function checkAppName(
   }
 }
 
-async function createInstance(
-  appId: string,
-  template: any,
-  includeSampleData: boolean
-) {
+interface AppTemplate {
+  templateString: string
+  useTemplate: string
+  file?: {
+    type: string
+    path: string
+    password?: string
+  }
+  key?: string
+}
+
+async function createInstance(appId: string, template: AppTemplate) {
   const db = context.getAppDB()
   await db.put({
     _id: "_design/database",
@@ -142,21 +153,25 @@ async function createInstance(
   } else {
     // create the users table
     await db.put(USERS_TABLE_SCHEMA)
-
-    if (includeSampleData) {
-      // create ootb stock db
-      await addDefaultTables(db)
-    }
   }
 
   return { _id: appId }
 }
 
-async function addDefaultTables(db: Database) {
-  const defaultDbDocs = buildDefaultDocs()
+export const addSampleData = async (ctx: UserCtx) => {
+  const db = context.getAppDB()
 
-  // add in the default db data docs - tables, datasource, rows and links
-  await db.bulkDocs([...defaultDbDocs])
+  try {
+    // Check if default datasource exists before creating it
+    await sdk.datasources.get(DEFAULT_BB_DATASOURCE_ID)
+  } catch (err: any) {
+    const defaultDbDocs = buildDefaultDocs()
+
+    // add in the default db data docs - tables, datasource, rows and links
+    await db.bulkDocs([...defaultDbDocs])
+  }
+
+  ctx.status = 200
 }
 
 export async function fetch(ctx: UserCtx) {
@@ -204,6 +219,7 @@ export async function fetchAppPackage(ctx: UserCtx) {
   let application = await db.get(DocumentType.APP_METADATA)
   const layouts = await getLayouts()
   let screens = await getScreens()
+  const license = await licensing.cache.getCachedLicense()
 
   // Enrich plugin URLs
   application.usedPlugins = objectStore.enrichPluginURLs(
@@ -223,40 +239,42 @@ export async function fetchAppPackage(ctx: UserCtx) {
   )
 
   ctx.body = {
-    application,
+    application: { ...application, upgradableVersion: envCore.VERSION },
+    licenseType: license?.plan.type || PlanType.FREE,
     screens,
     layouts,
     clientLibPath,
+    hasLock: await doesUserHaveLock(application.appId, ctx.user),
   }
 }
 
 async function performAppCreate(ctx: UserCtx) {
   const apps = (await dbCore.getAllApps({ dev: true })) as App[]
   const name = ctx.request.body.name,
-    possibleUrl = ctx.request.body.url
+    possibleUrl = ctx.request.body.url,
+    encryptionPassword = ctx.request.body.encryptionPassword
+
   checkAppName(ctx, apps, name)
   const url = sdk.applications.getAppUrl({ name, url: possibleUrl })
   checkAppUrl(ctx, apps, url)
 
   const { useTemplate, templateKey, templateString } = ctx.request.body
-  const instanceConfig: any = {
+  const instanceConfig: AppTemplate = {
     useTemplate,
     key: templateKey,
     templateString,
   }
   if (ctx.request.files && ctx.request.files.templateFile) {
-    instanceConfig.file = ctx.request.files.templateFile
+    instanceConfig.file = {
+      ...(ctx.request.files.templateFile as any),
+      password: encryptionPassword,
+    }
   }
-  const includeSampleData = isQsTrue(ctx.request.body.sampleData)
   const tenantId = tenancy.isMultiTenant() ? tenancy.getTenantId() : null
   const appId = generateDevAppID(generateAppID(tenantId))
 
   return await context.doInAppContext(appId, async () => {
-    const instance = await createInstance(
-      appId,
-      instanceConfig,
-      includeSampleData
-    )
+    const instance = await createInstance(appId, instanceConfig)
     const db = context.getAppDB()
 
     let newApplication: App = {
@@ -264,7 +282,7 @@ async function performAppCreate(ctx: UserCtx) {
       _rev: undefined,
       appId,
       type: "app",
-      version: packageJson.version,
+      version: envCore.VERSION,
       componentLibraries: ["@budibase/standard-components"],
       name: name,
       url: url,
@@ -433,7 +451,7 @@ export async function updateClient(ctx: UserCtx) {
   }
 
   // Update versions in app package
-  const updatedToVersion = packageJson.version
+  const updatedToVersion = envCore.VERSION
   const appPackageUpdates = {
     version: updatedToVersion,
     revertableVersion: currentVersion,

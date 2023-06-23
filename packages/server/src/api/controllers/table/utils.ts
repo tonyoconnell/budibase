@@ -110,29 +110,36 @@ export function importToRows(
   table: Table,
   user: ContextUser | null = null
 ) {
+  let originalTable = table
   let finalData: any = []
   for (let i = 0; i < data.length; i++) {
     let row = data[i]
     row._id = generateRowID(table._id!)
     row.tableId = table._id
+
+    // We use a reference to table here and update it after input processing,
+    // so that we can auto increment auto IDs in imported data properly
     const processed = inputProcessing(user, table, row, {
       noAutoRelationships: true,
     })
     row = processed.row
     table = processed.table
 
-    for (const [fieldName, schema] of Object.entries(table.schema)) {
-      // check whether the options need to be updated for inclusion as part of the data import
+    // However here we must reference the original table, as we want to mutate
+    // the real schema of the table passed in, not the clone used for
+    // incrementing auto IDs
+    for (const [fieldName, schema] of Object.entries(originalTable.schema)) {
+      const rowVal = Array.isArray(row[fieldName])
+        ? row[fieldName]
+        : [row[fieldName]]
       if (
-        schema.type === FieldTypes.OPTIONS &&
-        row[fieldName] &&
-        (!schema.constraints!.inclusion ||
-          schema.constraints!.inclusion.indexOf(row[fieldName]) === -1)
+        (schema.type === FieldTypes.OPTIONS ||
+          schema.type === FieldTypes.ARRAY) &&
+        row[fieldName]
       ) {
-        schema.constraints!.inclusion = [
-          ...schema.constraints!.inclusion!,
-          row[fieldName],
-        ]
+        let merged = [...schema.constraints!.inclusion!, ...rowVal]
+        let superSet = new Set(merged)
+        schema.constraints!.inclusion = Array.from(superSet)
         schema.constraints!.inclusion.sort()
       }
     }
@@ -142,7 +149,12 @@ export function importToRows(
   return finalData
 }
 
-export async function handleDataImport(user: any, table: any, rows: any) {
+export async function handleDataImport(
+  user: any,
+  table: any,
+  rows: any,
+  identifierFields: Array<string> = []
+) {
   const schema: unknown = table.schema
 
   if (!rows || !isRows(rows) || !isSchema(schema)) {
@@ -153,6 +165,32 @@ export async function handleDataImport(user: any, table: any, rows: any) {
   const data = parse(rows, schema)
 
   let finalData: any = importToRows(data, table, user)
+
+  //Set IDs of finalData to match existing row if an update is expected
+  if (identifierFields.length > 0) {
+    const allDocs = await db.allDocs(
+      getRowParams(table._id, null, {
+        include_docs: true,
+      })
+    )
+    allDocs.rows
+      .map(existingRow => existingRow.doc)
+      .forEach((doc: any) => {
+        finalData.forEach((finalItem: any) => {
+          let match = true
+          for (const field of identifierFields) {
+            if (finalItem[field] !== doc[field]) {
+              match = false
+              break
+            }
+          }
+          if (match) {
+            finalItem._id = doc._id
+            finalItem._rev = doc._rev
+          }
+        })
+      })
+  }
 
   await quotas.addRows(finalData.length, () => db.bulkDocs(finalData), {
     tableId: table._id,

@@ -49,6 +49,7 @@ import {
   SearchFilters,
   UserRoles,
 } from "@budibase/types"
+import { BUILTIN_ROLE_IDS } from "@budibase/backend-core/src/security/roles"
 
 type DefaultUserValues = {
   globalUserId: string
@@ -306,6 +307,33 @@ class TestConfiguration {
     }
   }
 
+  async createGroup(roleId: string = BUILTIN_ROLE_IDS.BASIC) {
+    return context.doInTenant(this.tenantId!, async () => {
+      const baseGroup = structures.userGroups.userGroup()
+      baseGroup.roles = {
+        [this.prodAppId]: roleId,
+      }
+      const { id, rev } = await pro.sdk.groups.save(baseGroup)
+      return {
+        _id: id,
+        _rev: rev,
+        ...baseGroup,
+      }
+    })
+  }
+
+  async addUserToGroup(groupId: string, userId: string) {
+    return context.doInTenant(this.tenantId!, async () => {
+      await pro.sdk.groups.addUsers(groupId, [userId])
+    })
+  }
+
+  async removeUserFromGroup(groupId: string, userId: string) {
+    return context.doInTenant(this.tenantId!, async () => {
+      await pro.sdk.groups.removeUsers(groupId, [userId])
+    })
+  }
+
   async login({ roleId, userId, builder, prodApp = false }: any = {}) {
     const appId = prodApp ? this.prodAppId : this.appId
     return context.doInAppContext(appId, async () => {
@@ -345,7 +373,7 @@ class TestConfiguration {
 
   // HEADERS
 
-  defaultHeaders(extras = {}) {
+  defaultHeaders(extras = {}, prodApp = false) {
     const tenantId = this.getTenantId()
     const authObj: AuthToken = {
       userId: this.defaultUserValues.globalUserId,
@@ -362,7 +390,9 @@ class TestConfiguration {
       ...extras,
     }
 
-    if (this.appId) {
+    if (prodApp) {
+      headers[constants.Header.APP_ID] = this.prodAppId
+    } else if (this.appId) {
       headers[constants.Header.APP_ID] = this.appId
     }
     return headers

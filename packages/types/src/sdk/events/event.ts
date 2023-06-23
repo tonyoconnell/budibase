@@ -1,4 +1,5 @@
 import { Hosting } from "../hosting"
+import { Group, Identity } from "./identification"
 
 export enum Event {
   // USER
@@ -24,6 +25,9 @@ export enum Event {
   USER_PASSWORD_UPDATED = "user:password:updated",
   USER_PASSWORD_RESET_REQUESTED = "user:password:reset:requested",
   USER_PASSWORD_RESET = "user:password:reset",
+
+  // USER / COLLABORATION
+  USER_DATA_COLLABORATION = "user:data:collaboration",
 
   // EMAIL
   EMAIL_SMTP_CREATED = "email:smtp:created",
@@ -137,7 +141,6 @@ export enum Event {
 
   // LICENSE
   LICENSE_PLAN_CHANGED = "license:plan:changed",
-  LICENSE_TIER_CHANGED = "license:tier:changed",
   LICENSE_ACTIVATED = "license:activated",
   LICENSE_PAYMENT_FAILED = "license:payment:failed",
   LICENSE_PAYMENT_RECOVERED = "license:payment:recovered",
@@ -186,6 +189,24 @@ export enum Event {
   AUDIT_LOGS_DOWNLOADED = "audit_log:downloaded",
 }
 
+export const UserGroupSyncEvents: Event[] = [
+  Event.USER_CREATED,
+  Event.USER_UPDATED,
+  Event.USER_DELETED,
+  Event.USER_PERMISSION_ADMIN_ASSIGNED,
+  Event.USER_PERMISSION_ADMIN_REMOVED,
+  Event.USER_PERMISSION_BUILDER_ASSIGNED,
+  Event.USER_PERMISSION_BUILDER_REMOVED,
+  Event.USER_GROUP_CREATED,
+  Event.USER_GROUP_UPDATED,
+  Event.USER_GROUP_DELETED,
+  Event.USER_GROUP_USERS_ADDED,
+  Event.USER_GROUP_USERS_REMOVED,
+  Event.USER_GROUP_PERMISSIONS_EDITED,
+]
+
+export const AsyncEvents: Event[] = [...UserGroupSyncEvents]
+
 // all events that are not audited have been added to this record as undefined, this means
 // that Typescript can protect us against new events being added and auditing of those
 // events not being considered. This might be a little ugly, but provides a level of
@@ -215,6 +236,7 @@ export const AuditedEventFriendlyName: Record<Event, string | undefined> = {
   [Event.USER_PASSWORD_FORCE_RESET]: undefined,
   [Event.USER_GROUP_ONBOARDING]: undefined,
   [Event.USER_ONBOARDING_COMPLETE]: undefined,
+  [Event.USER_DATA_COLLABORATION]: undefined,
 
   // EMAIL
   [Event.EMAIL_SMTP_CREATED]: `Email configuration created`,
@@ -309,7 +331,6 @@ export const AuditedEventFriendlyName: Record<Event, string | undefined> = {
 
   // LICENSE - NOT AUDITED
   [Event.LICENSE_PLAN_CHANGED]: undefined,
-  [Event.LICENSE_TIER_CHANGED]: undefined,
   [Event.LICENSE_ACTIVATED]: undefined,
   [Event.LICENSE_PAYMENT_FAILED]: undefined,
   [Event.LICENSE_PAYMENT_RECOVERED]: undefined,
@@ -383,3 +404,21 @@ export interface BaseEvent {
 }
 
 export type TableExportFormat = "json" | "csv"
+
+export type DocUpdateEvent = {
+  id: string
+  tenantId: string
+  appId?: string
+}
+
+export interface EventProcessor {
+  processEvent(
+    event: Event,
+    identity: Identity,
+    properties: any,
+    timestamp?: string | number
+  ): Promise<void>
+  identify?(identity: Identity, timestamp?: string | number): Promise<void>
+  identifyGroup?(group: Group, timestamp?: string | number): Promise<void>
+  shutdown?(): void
+}

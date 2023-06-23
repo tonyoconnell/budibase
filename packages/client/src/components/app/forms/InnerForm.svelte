@@ -221,9 +221,17 @@
       return fieldInfo
     },
     validate: () => {
-      return fields
-        .filter(field => get(field).step === get(currentStep))
-        .every(field => get(field).fieldApi.validate())
+      const stepFields = fields.filter(
+        field => get(field).step === get(currentStep)
+      )
+      // We want to validate every field (even if validation fails early) to
+      // ensure that all fields are populated with errors if invalid
+      let valid = true
+      stepFields.forEach(field => {
+        const fieldValid = get(field).fieldApi.validate()
+        valid = valid && fieldValid
+      })
+      return valid
     },
     reset: () => {
       // Reset the form by resetting each individual field
@@ -287,7 +295,7 @@
         return state
       })
 
-      return !error
+      return true
     }
 
     // Clears the value of a certain field back to the default value
@@ -368,8 +376,9 @@
       deregister,
       validate: () => {
         // Validate the field by force setting the same value again
-        const { fieldState } = get(getField(field))
-        return setValue(fieldState.value, true)
+        const fieldInfo = getField(field)
+        setValue(get(fieldInfo).fieldState.value, true)
+        return !get(fieldInfo).fieldState.error
       },
     }
   }
@@ -396,12 +405,20 @@
     }
   }
 
+  const handleScrollToField = ({ field }) => {
+    const fieldId = get(getField(field)).fieldState.fieldId
+    const label = document.querySelector(`label[for="${fieldId}"]`)
+    document.getElementById(fieldId).focus({ preventScroll: true })
+    label.scrollIntoView({ behavior: "smooth" })
+  }
+
   // Action context to pass to children
   const actions = [
     { type: ActionTypes.ValidateForm, callback: formApi.validate },
     { type: ActionTypes.ClearForm, callback: formApi.reset },
     { type: ActionTypes.ChangeFormStep, callback: formApi.changeStep },
     { type: ActionTypes.UpdateFieldValue, callback: handleUpdateFieldValue },
+    { type: ActionTypes.ScrollTo, callback: handleScrollToField },
   ]
 </script>
 

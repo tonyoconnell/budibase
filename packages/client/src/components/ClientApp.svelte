@@ -16,6 +16,8 @@
     themeStore,
     appStore,
     devToolsStore,
+    environmentStore,
+    devToolsEnabled,
   } from "stores"
   import NotificationDisplay from "components/overlay/NotificationDisplay.svelte"
   import ConfirmationDisplay from "components/overlay/ConfirmationDisplay.svelte"
@@ -34,6 +36,8 @@
   import KeyboardManager from "components/preview/KeyboardManager.svelte"
   import DevToolsHeader from "components/devtools/DevToolsHeader.svelte"
   import DevTools from "components/devtools/DevTools.svelte"
+  import FreeFooter from "components/FreeFooter.svelte"
+  import licensing from "../licensing"
 
   // Provide contexts
   setContext("sdk", SDK)
@@ -44,10 +48,7 @@
   let permissionError = false
 
   // Determine if we should show devtools or not
-  $: showDevTools =
-    !$builderStore.inBuilder &&
-    $devToolsStore.enabled &&
-    !$routeStore.queryParams?.peek
+  $: showDevTools = $devToolsEnabled && !$routeStore.queryParams?.peek
 
   // Handle no matching route
   $: {
@@ -92,7 +93,7 @@
 
 <svelte:head>
   {#if $builderStore.usedPlugins?.length}
-    {#each $builderStore.usedPlugins as plugin}
+    {#each $builderStore.usedPlugins as plugin (plugin.hash)}
       <script src={`${plugin.jsUrl}`}></script>
     {/each}
   {/if}
@@ -104,6 +105,7 @@
     lang="en"
     dir="ltr"
     class="spectrum spectrum--medium {$themeStore.baseTheme} {$themeStore.theme}"
+    class:builder={$builderStore.inBuilder}
   >
     <DeviceBindingsProvider>
       <UserBindingsProvider>
@@ -186,6 +188,10 @@
                       <DevTools />
                     {/if}
                   </div>
+
+                  {#if !$builderStore.inBuilder && licensing.logoEnabled() && $environmentStore.cloud}
+                    <FreeFooter />
+                  {/if}
                 </div>
 
                 <!-- Preview and dev tools utilities  -->
@@ -216,11 +222,13 @@
     overflow: hidden;
     height: 100%;
     width: 100%;
-    background: transparent;
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
+  }
+  #spectrum-root.builder {
+    background: transparent;
   }
 
   #clip-root {

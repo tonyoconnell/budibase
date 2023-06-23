@@ -6,13 +6,21 @@
   import NavItem from "components/common/NavItem.svelte"
   import { goto, isActive } from "@roxi/routify"
 
-  const alphabetical = (a, b) => a.name?.toLowerCase() > b.name?.toLowerCase()
+  const alphabetical = (a, b) =>
+    a.name?.toLowerCase() > b.name?.toLowerCase() ? 1 : -1
 
   export let sourceId
 
   $: sortedTables = $tables.list
     .filter(table => table.sourceId === sourceId)
     .sort(alphabetical)
+
+  const selectTable = tableId => {
+    tables.select(tableId)
+    if (!$isActive("./table/:tableId")) {
+      $goto(`./table/${tableId}`)
+    }
+  }
 </script>
 
 {#if $database?._id}
@@ -25,7 +33,7 @@
         text={table.name}
         selected={$isActive("./table/:tableId") &&
           $tables.selected?._id === table._id}
-        on:click={() => $goto(`./table/${table._id}`)}
+        on:click={() => selectTable(table._id)}
       >
         {#if table._id !== TableNames.USERS}
           <EditTablePopover {table} />

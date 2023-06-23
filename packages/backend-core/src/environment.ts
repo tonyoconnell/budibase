@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from "fs"
+
 function isTest() {
   return isCypress() || isJest()
 }
@@ -45,6 +47,35 @@ function httpLogging() {
   return process.env.HTTP_LOGGING
 }
 
+function findVersion() {
+  function findFileInAncestors(
+    fileName: string,
+    currentDir: string
+  ): string | null {
+    const filePath = `${currentDir}/${fileName}`
+    if (existsSync(filePath)) {
+      return filePath
+    }
+
+    const parentDir = `${currentDir}/..`
+    if (parentDir === currentDir) {
+      // reached root directory
+      return null
+    }
+
+    return findFileInAncestors(fileName, parentDir)
+  }
+
+  try {
+    const packageJsonFile = findFileInAncestors("package.json", process.cwd())
+    const content = readFileSync(packageJsonFile!, "utf-8")
+    return JSON.parse(content).version
+  } catch {
+    // throwing an error here is confusing/causes backend-core to be hard to import
+    return undefined
+  }
+}
+
 const environment = {
   isTest,
   isJest,
@@ -64,8 +95,8 @@ const environment = {
   GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
   SALT_ROUNDS: process.env.SALT_ROUNDS,
   REDIS_URL: process.env.REDIS_URL || "localhost:6379",
-  REDIS_PASSWORD: process.env.REDIS_PASSWORD || "budibase",
-  MOCK_REDIS: process.env.MOCK_REDIS,
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+  REDIS_CLUSTERED: process.env.REDIS_CLUSTERED,
   MINIO_ACCESS_KEY: process.env.MINIO_ACCESS_KEY,
   MINIO_SECRET_KEY: process.env.MINIO_SECRET_KEY,
   AWS_REGION: process.env.AWS_REGION,
@@ -97,6 +128,7 @@ const environment = {
   PLUGIN_BUCKET_NAME:
     process.env.PLUGIN_BUCKET_NAME || DefaultBucketName.PLUGINS,
   USE_COUCH: process.env.USE_COUCH || true,
+  MOCK_REDIS: process.env.MOCK_REDIS,
   DEFAULT_LICENSE: process.env.DEFAULT_LICENSE,
   SERVICE: process.env.SERVICE || "budibase",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
@@ -122,6 +154,8 @@ const environment = {
   ENABLE_SSO_MAINTENANCE_MODE: selfHosted
     ? process.env.ENABLE_SSO_MAINTENANCE_MODE
     : false,
+  VERSION: findVersion(),
+  DISABLE_PINO_LOGGER: process.env.DISABLE_PINO_LOGGER,
   _set(key: any, value: any) {
     process.env[key] = value
     // @ts-ignore

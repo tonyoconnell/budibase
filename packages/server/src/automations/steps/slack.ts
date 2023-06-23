@@ -4,6 +4,9 @@ import {
   AutomationActionStepId,
   AutomationStepSchema,
   AutomationStepInput,
+  AutomationStepType,
+  AutomationIOType,
+  AutomationFeature,
 } from "@budibase/types"
 
 export const definition: AutomationStepSchema = {
@@ -12,18 +15,21 @@ export const definition: AutomationStepSchema = {
   description: "Send a message to Slack",
   icon: "ri-slack-line",
   stepId: AutomationActionStepId.slack,
-  type: "ACTION",
+  type: AutomationStepType.ACTION,
   internal: false,
+  features: {
+    [AutomationFeature.LOOPING]: true,
+  },
   inputs: {},
   schema: {
     inputs: {
       properties: {
         url: {
-          type: "string",
+          type: AutomationIOType.STRING,
           title: "Incoming Webhook URL",
         },
         text: {
-          type: "string",
+          type: AutomationIOType.STRING,
           title: "Message",
         },
       },
@@ -32,15 +38,15 @@ export const definition: AutomationStepSchema = {
     outputs: {
       properties: {
         httpStatus: {
-          type: "number",
+          type: AutomationIOType.NUMBER,
           description: "The HTTP status code of the request",
         },
         success: {
-          type: "boolean",
+          type: AutomationIOType.BOOLEAN,
           description: "Whether the message sent successfully",
         },
         response: {
-          type: "string",
+          type: AutomationIOType.STRING,
           description: "The response from the Slack Webhook",
         },
       },

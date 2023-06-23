@@ -9,14 +9,12 @@
     notifications,
     Notification,
     Body,
-    Icon,
     Search,
-    InlineAlert,
   } from "@budibase/bbui"
   import Spinner from "components/common/Spinner.svelte"
   import CreateAppModal from "components/start/CreateAppModal.svelte"
   import AppLimitModal from "components/portal/licensing/AppLimitModal.svelte"
-  import ConfirmDialog from "components/common/ConfirmDialog.svelte"
+  import AccountLockedModal from "components/portal/licensing/AccountLockedModal.svelte"
 
   import { store, automationStore } from "builderStore"
   import { API } from "api"
@@ -31,13 +29,12 @@
   let template
   let creationModal
   let appLimitModal
+  let accountLockedModal
   let creatingApp = false
   let searchTerm = ""
-  let cloud = $admin.cloud
   let creatingFromTemplate = false
   let automationErrors
   let accessFilterList = null
-  let confirmDownloadDialog
 
   $: welcomeHeader = `Welcome ${$auth?.user?.firstName || "back"}`
   $: enrichedApps = enrichApps($apps, $auth.user, sortBy)
@@ -53,6 +50,11 @@
         : true)
   )
   $: automationErrors = getAutomationErrors(enrichedApps)
+  $: isOwner = $auth.accountPortalAccess && $admin.cloud
+
+  const usersLimitLockAction = $licensing?.errUserLimit
+    ? () => accountLockedModal.show()
+    : null
 
   const enrichApps = (apps, user, sortBy) => {
     const enrichedApps = apps.map(app => ({
@@ -120,15 +122,6 @@
       template = null
       creationModal.show()
       creatingApp = true
-    }
-  }
-
-  const initiateAppsExport = () => {
-    try {
-      window.location = `/api/cloud/export`
-      notifications.success("Apps exported successfully")
-    } catch (err) {
-      notifications.error(`Error exporting apps: ${err}`)
     }
   }
 
@@ -203,6 +196,9 @@
         creatingFromTemplate = true
         createAppFromTemplateUrl(initInfo.init_template)
       }
+      if (usersLimitLockAction) {
+        usersLimitLockAction()
+      }
     } catch (error) {
       notifications.error("Error getting init info")
     }
@@ -244,33 +240,36 @@
         <Layout noPadding gap="L">
           <div class="title">
             <div class="buttons">
-              <Button size="M" cta on:click={initiateAppCreation}>
+              <Button
+                size="M"
+                cta
+                on:click={usersLimitLockAction || initiateAppCreation}
+              >
                 Create new app
               </Button>
-              {#if $apps?.length > 0}
+              {#if $apps?.length > 0 && !$admin.offlineMode}
                 <Button
                   size="M"
                   secondary
-                  on:click={$goto("/builder/portal/apps/templates")}
+                  on:click={usersLimitLockAction ||
+                    $goto("/builder/portal/apps/templates")}
                 >
                   View templates
                 </Button>
               {/if}
               {#if !$apps?.length}
-                <Button size="L" quiet secondary on:click={initiateAppImport}>
+                <Button
+                  size="L"
+                  quiet
+                  secondary
+                  on:click={usersLimitLockAction || initiateAppImport}
+                >
                   Import app
                 </Button>
               {/if}
             </div>
             {#if enrichedApps.length > 1}
               <div class="app-actions">
-                {#if cloud}
-                  <Icon
-                    name="Download"
-                    hoverable
-                    on:click={confirmDownloadDialog.show}
-                  />
-                {/if}
                 <Select
                   autoWidth
                   bind:value={sortBy}
@@ -288,7 +287,7 @@
 
           <div class="app-table">
             {#each filteredApps as app (app.appId)}
-              <AppRow {app} />
+              <AppRow {app} lockedAction={usersLimitLockAction} />
             {/each}
           </div>
         </Layout>
@@ -315,18 +314,11 @@
 </Modal>
 
 <AppLimitModal bind:this={appLimitModal} />
-
-<ConfirmDialog
-  bind:this={confirmDownloadDialog}
-  okText="Continue"
-  onOk={initiateAppsExport}
-  warning={false}
-  title="Download all apps"
->
-  <InlineAlert
-    header="Do not share your budibase application exports publicly as they may contain sensitive information such as database credentials or secret keys."
-  />
-</ConfirmDialog>
+<AccountLockedModal
+  bind:this={accountLockedModal}
+  onConfirm={() =>
+    isOwner ? $licensing.goToUpgradePage() : $licensing.goToPricingPage()}
+/>
 
 <style>
   .title {
@@ -363,7 +355,6 @@
     justify-content: flex-start;
     align-items: stretch;
     gap: var(--spacing-xl);
-    overflow: hidden;
   }
 
   .empty-wrapper {

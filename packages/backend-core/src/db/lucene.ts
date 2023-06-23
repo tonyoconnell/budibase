@@ -243,7 +243,7 @@ export class QueryBuilder<T> {
     }
     // Escape characters
     if (!this.#noEscaping && escape && originalType === "string") {
-      value = `${value}`.replace(/[ #+\-&|!(){}\]^"~*?:\\]/g, "\\$&")
+      value = `${value}`.replace(/[ \/#+\-&|!(){}\]^"~*?:\\]/g, "\\$&")
     }
 
     // Wrap in quotes
@@ -320,6 +320,18 @@ export class QueryBuilder<T> {
       return `${key}:(${statement})`
     }
 
+    const fuzzy = (key: string, value: any) => {
+      if (!value) {
+        return null
+      }
+      value = builder.preprocess(value, {
+        escape: true,
+        lowercase: true,
+        type: "fuzzy",
+      })
+      return `${key}:/.*${value}.*/`
+    }
+
     const notContains = (key: string, value: any) => {
       const allPrefix = allOr ? "*:* AND " : ""
       const mode = allOr ? "AND" : undefined
@@ -331,6 +343,9 @@ export class QueryBuilder<T> {
     }
 
     const oneOf = (key: string, value: any) => {
+      if (!value) {
+        return `*:*`
+      }
       if (!Array.isArray(value)) {
         if (typeof value === "string") {
           value = value.split(",")
@@ -408,17 +423,7 @@ export class QueryBuilder<T> {
       })
     }
     if (this.#query.fuzzy) {
-      build(this.#query.fuzzy, (key: string, value: any) => {
-        if (!value) {
-          return null
-        }
-        value = builder.preprocess(value, {
-          escape: true,
-          lowercase: true,
-          type: "fuzzy",
-        })
-        return `${key}:${value}~`
-      })
+      build(this.#query.fuzzy, fuzzy)
     }
     if (this.#query.equal) {
       build(this.#query.equal, equal)
@@ -432,7 +437,7 @@ export class QueryBuilder<T> {
       })
     }
     if (this.#query.empty) {
-      build(this.#query.empty, (key: string) => `!${key}:["" TO *]`)
+      build(this.#query.empty, (key: string) => `(*:* -${key}:["" TO *])`)
     }
     if (this.#query.notEmpty) {
       build(this.#query.notEmpty, (key: string) => `${key}:["" TO *]`)

@@ -26,6 +26,7 @@ import {
   RelationshipTypes,
 } from "@budibase/types"
 import sdk from "../../../sdk"
+import { builderSocket } from "../../../websockets"
 const { cloneDeep } = require("lodash/fp")
 
 async function makeTableRequest(
@@ -175,6 +176,7 @@ export async function save(ctx: UserCtx) {
   let tableToSave: TableRequest = {
     type: "table",
     _id: buildExternalTableId(datasourceId, inputs.name),
+    sourceId: datasourceId,
     ...inputs,
   }
 
@@ -289,6 +291,11 @@ export async function save(ctx: UserCtx) {
   datasource.entities[tableToSave.name] = tableToSave
   await db.put(datasource)
 
+  // Since tables are stored inside datasources, we need to notify clients
+  // that the datasource definition changed
+  const updatedDatasource = await db.get(datasource._id)
+  builderSocket?.emitDatasourceUpdate(ctx, updatedDatasource)
+
   return tableToSave
 }
 
@@ -316,6 +323,11 @@ export async function destroy(ctx: UserCtx) {
   sdk.tables.cleanupRelationships(tableToDelete, tables)
   delete datasource.entities[tableToDelete.name]
   await db.put(datasource)
+
+  // Since tables are stored inside datasources, we need to notify clients
+  // that the datasource definition changed
+  const updatedDatasource = await db.get(datasource._id)
+  builderSocket?.emitDatasourceUpdate(ctx, updatedDatasource)
 
   return tableToDelete
 }

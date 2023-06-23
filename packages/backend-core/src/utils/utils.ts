@@ -1,11 +1,5 @@
-import { getAllApps, queryGlobalView } from "../db"
-import {
-  Header,
-  MAX_VALID_DATE,
-  DocumentType,
-  SEPARATOR,
-  ViewName,
-} from "../constants"
+import { getAllApps } from "../db"
+import { Header, MAX_VALID_DATE, DocumentType, SEPARATOR } from "../constants"
 import env from "../environment"
 import * as tenancy from "../tenancy"
 import * as context from "../context"
@@ -23,7 +17,9 @@ const APP_PREFIX = DocumentType.APP + SEPARATOR
 const PROD_APP_PREFIX = "/app/"
 
 const BUILDER_PREVIEW_PATH = "/app/preview"
-const BUILDER_REFERER_PREFIX = "/builder/app/"
+const BUILDER_PREFIX = "/builder"
+const BUILDER_APP_PREFIX = `${BUILDER_PREFIX}/app/`
+const PUBLIC_API_PREFIX = "/api/public/v"
 
 function confirmAppId(possibleAppId: string | undefined) {
   return possibleAppId && possibleAppId.startsWith(APP_PREFIX)
@@ -46,8 +42,9 @@ export async function resolveAppUrl(ctx: Ctx) {
   }
 
   // search prod apps for a url that matches
-  const apps: App[] = await context.doInTenant(tenantId, () =>
-    getAllApps({ dev: false })
+  const apps: App[] = await context.doInTenant(
+    tenantId,
+    () => getAllApps({ dev: false }) as Promise<App[]>
   )
   const app = apps.filter(
     a => a.url && a.url.toLowerCase() === possibleAppUrl
@@ -66,6 +63,18 @@ export function isServingApp(ctx: Ctx) {
     return true
   }
   return false
+}
+
+export function isServingBuilder(ctx: Ctx): boolean {
+  return ctx.path.startsWith(BUILDER_APP_PREFIX)
+}
+
+export function isServingBuilderPreview(ctx: Ctx): boolean {
+  return ctx.path.startsWith(BUILDER_PREVIEW_PATH)
+}
+
+export function isPublicApiRequest(ctx: Ctx): boolean {
+  return ctx.path.startsWith(PUBLIC_API_PREFIX)
 }
 
 /**
@@ -109,7 +118,7 @@ export async function getAppIdFromCtx(ctx: Ctx) {
   // make sure this is performed after prod app url resolution, in case the
   // referer header is present from a builder redirect
   const referer = ctx.request.headers.referer
-  if (!appId && referer?.includes(BUILDER_REFERER_PREFIX)) {
+  if (!appId && referer?.includes(BUILDER_APP_PREFIX)) {
     const refererId = parseAppIdFromUrl(ctx.request.headers.referer)
     appId = confirmAppId(refererId)
   }
@@ -219,27 +228,6 @@ export function clearCookie(ctx: Ctx, name: string) {
  */
 export function isClient(ctx: Ctx) {
   return ctx.headers[Header.TYPE] === "client"
-}
-
-async function getBuilders() {
-  const builders = await queryGlobalView(ViewName.USER_BY_BUILDERS, {
-    include_docs: false,
-  })
-
-  if (!builders) {
-    return []
-  }
-
-  if (Array.isArray(builders)) {
-    return builders
-  } else {
-    return [builders]
-  }
-}
-
-export async function getBuildersCount() {
-  const builders = await getBuilders()
-  return builders.length
 }
 
 export function timeout(timeMs: number) {

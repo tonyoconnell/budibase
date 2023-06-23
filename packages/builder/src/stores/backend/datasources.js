@@ -1,4 +1,4 @@
-import { writable, derived } from "svelte/store"
+import { writable, derived, get } from "svelte/store"
 import { queries, tables } from "./"
 import { API } from "api"
 
@@ -25,6 +25,8 @@ export function createDatasourcesStore() {
     store.update(state => ({
       ...state,
       selectedDatasourceId: id,
+      // Remove any possible schema error
+      schemaError: null,
     }))
   }
 
@@ -55,7 +57,10 @@ export function createDatasourcesStore() {
     return updateDatasource(response)
   }
 
-  const save = async (body, fetchSchema = false) => {
+  const save = async (body, { fetchSchema, tablesFilter } = {}) => {
+    if (fetchSchema == null) {
+      fetchSchema = false
+    }
     let response
     if (body._id) {
       response = await API.updateDatasource(body)
@@ -63,6 +68,7 @@ export function createDatasourcesStore() {
       response = await API.createDatasource({
         datasource: body,
         fetchSchema,
+        tablesFilter,
       })
     }
     return updateDatasource(response)
@@ -89,6 +95,43 @@ export function createDatasourcesStore() {
     })
   }
 
+  // Handles external updates of datasources
+  const replaceDatasource = (datasourceId, datasource) => {
+    if (!datasourceId) {
+      return
+    }
+
+    // Handle deletion
+    if (!datasource) {
+      store.update(state => ({
+        ...state,
+        list: state.list.filter(x => x._id !== datasourceId),
+      }))
+      return
+    }
+
+    // Add new datasource
+    const index = get(store).list.findIndex(x => x._id === datasource._id)
+    if (index === -1) {
+      store.update(state => ({
+        ...state,
+        list: [...state.list, datasource],
+      }))
+
+      // If this is a new datasource then we should refresh the tables list,
+      // because otherwise we'll never see the new tables
+      tables.fetch()
+    }
+
+    // Update existing datasource
+    else if (datasource) {
+      store.update(state => {
+        state.list[index] = datasource
+        return state
+      })
+    }
+  }
+
   return {
     subscribe: derivedStore.subscribe,
     fetch,
@@ -98,6 +141,7 @@ export function createDatasourcesStore() {
     save,
     delete: deleteDatasource,
     removeSchemaError,
+    replaceDatasource,
   }
 }
 

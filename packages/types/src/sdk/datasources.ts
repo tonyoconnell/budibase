@@ -55,7 +55,6 @@ export enum SourceName {
   FIRESTORE = "FIRESTORE",
   REDIS = "REDIS",
   SNOWFLAKE = "SNOWFLAKE",
-  UNKNOWN = "unknown",
 }
 
 export enum IncludeRelationship {
@@ -72,6 +71,12 @@ export enum FilterType {
   EMPTY = "empty",
   NOT_EMPTY = "notEmpty",
   ONE_OF = "oneOf",
+}
+
+export enum DatasourceFeature {
+  CONNECTION_CHECKING = "connection",
+  FETCH_TABLE_NAMES = "fetch_table_names",
+  EXPORT_SCHEMA = "export_schema",
 }
 
 export interface StepDefinition {
@@ -112,6 +117,7 @@ export interface Integration {
   docs: string
   plus?: boolean
   auth?: { type: string }
+  features?: Partial<Record<DatasourceFeature, boolean>>
   relationships?: boolean
   description: string
   friendlyName: string
@@ -124,11 +130,18 @@ export interface Integration {
   extra?: ExtraQueryConfig
 }
 
+export type ConnectionInfo = {
+  connected: boolean
+  error?: string
+}
+
 export interface IntegrationBase {
   create?(query: any): Promise<any[] | any>
   read?(query: any): Promise<any[] | any>
   update?(query: any): Promise<any[] | any>
   delete?(query: any): Promise<any[] | any>
+  testConnection?(): Promise<ConnectionInfo>
+  getExternalSchema?(): Promise<string>
 }
 
 export interface DatasourcePlus extends IntegrationBase {
@@ -140,4 +153,5 @@ export interface DatasourcePlus extends IntegrationBase {
   getBindingIdentifier(): string
   getStringConcat(parts: string[]): string
   buildSchema(datasourceId: string, entities: Record<string, Table>): any
+  getTableNames(): Promise<string[]>
 }

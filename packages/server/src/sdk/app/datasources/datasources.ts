@@ -13,6 +13,7 @@ import {
 import { cloneDeep } from "lodash/fp"
 import { getEnvironmentVariables } from "../../utils"
 import { getDefinitions, getDefinition } from "../../../integrations"
+import _ from "lodash"
 
 const ENV_VAR_PREFIX = "env."
 
@@ -35,13 +36,16 @@ export function checkDatasourceTypes(schema: Integration, config: any) {
 async function enrichDatasourceWithValues(datasource: Datasource) {
   const cloned = cloneDeep(datasource)
   const env = await getEnvironmentVariables()
+  //Do not process entities, as we do not want to process formulas
+  const { entities, ...clonedWithoutEntities } = cloned
   const processed = processObjectSync(
-    cloned,
+    clonedWithoutEntities,
     { env },
     { onlyFound: true }
   ) as Datasource
+  processed.entities = entities
   const definition = await getDefinition(processed.source)
-  processed.config = checkDatasourceTypes(definition, processed.config)
+  processed.config = checkDatasourceTypes(definition!, processed.config)
   return {
     datasource: processed,
     envVars: env as Record<string, string>,
@@ -134,7 +138,7 @@ export function mergeConfigs(update: Datasource, old: Datasource) {
   // specific to REST datasources, fix the auth configs again if required
   if (hasAuthConfigs(update)) {
     const configs = update.config.authConfigs as RestAuthConfig[]
-    const oldConfigs = old.config?.authConfigs as RestAuthConfig[]
+    const oldConfigs = (old.config?.authConfigs as RestAuthConfig[]) || []
     for (let config of configs) {
       if (config.type !== RestAuthType.BASIC) {
         continue
@@ -147,6 +151,11 @@ export function mergeConfigs(update: Datasource, old: Datasource) {
       }
     }
   }
+
+  if (old.config?.auth) {
+    update.config = _.merge(old.config, update.config)
+  }
+
   // update back to actual passwords for everything else
   for (let [key, value] of Object.entries(update.config)) {
     if (value !== PASSWORD_REPLACEMENT) {
@@ -158,5 +167,6 @@ export function mergeConfigs(update: Datasource, old: Datasource) {
       delete update.config[key]
     }
   }
+
   return update
 }

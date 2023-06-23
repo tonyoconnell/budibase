@@ -69,7 +69,7 @@
       name: "App",
       description: "",
       icon: "Play",
-      action: () => window.open(`/${$store.appId}`),
+      action: () => store.update(state => ({ ...state, showPreview: true })),
     },
     {
       type: "Preview",
@@ -324,10 +324,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  footer {
-    display: flex;
-    justify-content: center;
   }
 </style>

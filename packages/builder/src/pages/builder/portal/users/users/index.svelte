@@ -11,6 +11,7 @@
     notifications,
     Pagination,
     Divider,
+    InlineAlert,
   } from "@budibase/bbui"
   import AddUserModal from "./_components/AddUserModal.svelte"
   import {
@@ -20,9 +21,11 @@
     licensing,
     organisation,
     features,
+    admin,
   } from "stores/portal"
   import { onMount } from "svelte"
   import DeleteRowsButton from "components/backend/DataTable/buttons/DeleteRowsButton.svelte"
+  import UpgradeModal from "components/common/users/UpgradeModal.svelte"
   import GroupsTableRenderer from "./_components/GroupsTableRenderer.svelte"
   import AppsTableRenderer from "./_components/AppsTableRenderer.svelte"
   import RoleTableRenderer from "./_components/RoleTableRenderer.svelte"
@@ -50,7 +53,8 @@
     inviteConfirmationModal,
     onboardingTypeModal,
     passwordModal,
-    importUsersModal
+    importUsersModal,
+    userLimitReachedModal
   let searchEmail = undefined
   let selectedRows = []
   let bulkSaveResponse
@@ -61,7 +65,9 @@
   ]
   let userData = []
 
+  $: isOwner = $auth.accountPortalAccess && $admin.cloud
   $: readonly = !$auth.isAdmin || $features.isScimEnabled
+
   $: debouncedUpdateFetch(searchEmail)
   $: schema = {
     email: {
@@ -81,6 +87,17 @@
       width: "1fr",
     },
   }
+
+  const getPendingSchema = tblSchema => {
+    if (!tblSchema) {
+      return {}
+    }
+    let pendingSchema = JSON.parse(JSON.stringify(tblSchema))
+    pendingSchema.email.displayName = "Pending Invites"
+    return pendingSchema
+  }
+
+  $: pendingSchema = getPendingSchema(schema)
   $: userData = []
   $: inviteUsersResponse = { successful: [], unsuccessful: [] }
   $: {
@@ -103,6 +120,24 @@
       }
     })
   }
+  let invitesLoaded = false
+  let pendingInvites = []
+  let parsedInvites = []
+
+  const invitesToSchema = invites => {
+    return invites.map(invite => {
+      const { admin, builder, userGroups, apps } = invite.info
+
+      return {
+        email: invite.email,
+        builder,
+        admin,
+        userGroups: userGroups,
+        apps: apps ? [...new Set(Object.keys(apps))] : undefined,
+      }
+    })
+  }
+  $: parsedInvites = invitesToSchema(pendingInvites)
 
   const updateFetch = email => {
     fetch.update({
@@ -137,6 +172,7 @@
     }))
     try {
       inviteUsersResponse = await users.invite(payload)
+      pendingInvites = await users.getInvites()
       inviteConfirmationModal.show()
     } catch (error) {
       notifications.error("Error inviting user")
@@ -225,6 +261,9 @@
     try {
       await groups.actions.init()
       groupsLoaded = true
+
+      pendingInvites = await users.getInvites()
+      invitesLoaded = true
     } catch (error) {
       notifications.error("Error fetching user group data")
     }
@@ -237,13 +276,42 @@
     <Body>Add users and control who gets access to your published apps</Body>
   </Layout>
   <Divider />
+  {#if $licensing.errUserLimit}
+    <InlineAlert
+      type="error"
+      onConfirm={() => {
+        if (isOwner) {
+          $licensing.goToUpgradePage()
+        } else {
+          window.open("https://budibase.com/pricing/", "_blank")
+        }
+      }}
+      buttonText={isOwner ? "Upgrade" : "View plans"}
+      cta
+      header="Account de-activated"
+      message="Due to the free plan user limit being exceeded, your account has been de-activated.
+      Upgrade your plan to re-activate your account."
+    />
+  {/if}
   <div class="controls">
     {#if !readonly}
       <ButtonGroup>
-        <Button disabled={readonly} on:click={createUserModal.show} cta>
+        <Button
+          disabled={readonly}
+          on:click={$licensing.userLimitReached
+            ? userLimitReachedModal.show
+            : createUserModal.show}
+          cta
+        >
           Add users
         </Button>
-        <Button disabled={readonly} on:click={importUsersModal.show} secondary>
+        <Button
+          disabled={readonly}
+          on:click={$licensing.userLimitReached
+            ? userLimitReachedModal.show
+            : importUsersModal.show}
+          secondary
+        >
           Import
         </Button>
       </ButtonGroup>
@@ -282,6 +350,15 @@
       goToNextPage={fetch.nextPage}
     />
   </div>
+  <Table
+    schema={pendingSchema}
+    data={parsedInvites}
+    allowEditColumns={false}
+    allowEditRows={false}
+    {customRenderers}
+    loading={!invitesLoaded}
+    allowClickRows={false}
+  />
 </Layout>
 
 <Modal bind:this={createUserModal}>
@@ -296,7 +373,7 @@
   <OnboardingTypeModal {chooseCreationType} />
 </Modal>
 
-<Modal bind:this={passwordModal}>
+<Modal bind:this={passwordModal} disableCancel={true}>
   <PasswordModal
     createUsersResponse={bulkSaveResponse}
     userData={userData.users}
@@ -305,6 +382,10 @@
 
 <Modal bind:this={importUsersModal}>
   <ImportUsersModal {createUsersFromCsv} />
+</Modal>
+
+<Modal bind:this={userLimitReachedModal}>
+  <UpgradeModal {isOwner} />
 </Modal>
 
 <style>
@@ -319,7 +400,6 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: var(--spacing-xl);
   }
 

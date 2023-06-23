@@ -14,13 +14,14 @@ export enum ViewName {
   USER_BY_APP = "by_app",
   USER_BY_EMAIL = "by_email2",
   BY_API_KEY = "by_api_key",
+  /** @deprecated - could be deleted */
   USER_BY_BUILDERS = "by_builders",
   LINK = "by_link",
   ROUTING = "screen_routes",
   AUTOMATION_LOGS = "automation_logs",
   ACCOUNT_BY_EMAIL = "account_by_email",
   PLATFORM_USERS_LOWERCASE = "platform_users_lowercase",
-  USER_BY_GROUP = "by_group_user",
+  USER_BY_GROUP = "user_by_group",
   APP_BACKUP_BY_TRIGGER = "by_trigger",
 }
 

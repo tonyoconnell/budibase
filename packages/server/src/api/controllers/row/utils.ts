@@ -3,10 +3,10 @@ import * as userController from "../user"
 import { FieldTypes } from "../../../constants"
 import { context } from "@budibase/backend-core"
 import { makeExternalQuery } from "../../../integrations/base/query"
-import { Row, Table } from "@budibase/types"
+import { FieldType, Row, Table, UserCtx } from "@budibase/types"
 import { Format } from "../view/exporters"
-import { Ctx } from "@budibase/types"
 import sdk from "../../../sdk"
+
 const validateJs = require("validate.js")
 const { cloneDeep } = require("lodash/fp")
 
@@ -20,13 +20,20 @@ validateJs.extend(validateJs.validators.datetime, {
   },
 })
 
+function isForeignKey(key: string, table: Table) {
+  const relationships = Object.values(table.schema).filter(
+    column => column.type === FieldType.LINK
+  )
+  return relationships.some(relationship => relationship.foreignKey === key)
+}
+
 export async function getDatasourceAndQuery(json: any) {
   const datasourceId = json.endpoint.datasourceId
   const datasource = await sdk.datasources.get(datasourceId)
   return makeExternalQuery(datasource, json)
 }
 
-export async function findRow(ctx: Ctx, tableId: string, rowId: string) {
+export async function findRow(ctx: UserCtx, tableId: string, rowId: string) {
   const db = context.getAppDB()
   let row
   // TODO remove special user case in future
@@ -65,13 +72,17 @@ export async function validate({
     const column = fetchedTable.schema[fieldName]
     const constraints = cloneDeep(column.constraints)
     const type = column.type
+    // foreign keys are likely to be enriched
+    if (isForeignKey(fieldName, fetchedTable)) {
+      continue
+    }
     // formulas shouldn't validated, data will be deleted anyway
     if (type === FieldTypes.FORMULA || column.autocolumn) {
       continue
     }
-    // special case for options, need to always allow unselected (null)
+    // special case for options, need to always allow unselected (empty)
     if (type === FieldTypes.OPTIONS && constraints.inclusion) {
-      constraints.inclusion.push(null)
+      constraints.inclusion.push(null, "")
     }
     let res
 
@@ -137,8 +148,8 @@ export function cleanExportRows(
     delete schema[column]
   })
 
-  // Intended to avoid 'undefined' in export
   if (format === Format.CSV) {
+    // Intended to append empty values in export
     const schemaKeys = Object.keys(schema)
     for (let key of schemaKeys) {
       if (columns?.length && columns.indexOf(key) > 0) {
@@ -146,11 +157,23 @@ export function cleanExportRows(
       }
       for (let row of cleanRows) {
         if (row[key] == null) {
-          row[key] = ""
+          row[key] = undefined
         }
       }
     }
   }
 
   return cleanRows
+}
+
+export function getTableId(ctx: any) {
+  if (ctx.request.body && ctx.request.body.tableId) {
+    return ctx.request.body.tableId
+  }
+  if (ctx.params && ctx.params.tableId) {
+    return ctx.params.tableId
+  }
+  if (ctx.params && ctx.params.viewName) {
+    return ctx.params.viewName
+  }
 }

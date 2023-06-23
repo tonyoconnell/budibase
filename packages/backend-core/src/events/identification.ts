@@ -23,8 +23,6 @@ import * as installation from "../installation"
 import * as configs from "../configs"
 import { withCache, TTL, CacheKey } from "../cache/generic"
 
-const pkg = require("../../package.json")
-
 /**
  * An identity can be:
  * - account user (Self host)
@@ -65,6 +63,7 @@ const getCurrentIdentity = async (): Promise<Identity> => {
       hosting,
       installationId,
       tenantId,
+      realTenantId: context.getTenantId(),
       environment,
     }
   } else if (identityType === IdentityType.USER) {
@@ -87,6 +86,7 @@ const getCurrentIdentity = async (): Promise<Identity> => {
       installationId,
       tenantId,
       environment,
+      realTenantId: context.getTenantId(),
       hostInfo: userContext.hostInfo,
     }
   } else {
@@ -101,7 +101,7 @@ const identifyInstallationGroup = async (
   const id = installId
   const type = IdentityType.INSTALLATION
   const hosting = getHostingFromEnv()
-  const version = pkg.version
+  const version = env.VERSION
   const environment = getDeploymentEnvironment()
 
   const group: InstallationGroup = {
@@ -305,4 +305,5 @@ export default {
   identify,
   identifyGroup,
   getInstallationId,
+  getUniqueTenantId,
 }

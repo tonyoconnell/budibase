@@ -8,6 +8,7 @@ interface ApiOptions {
   method?: APIMethod
   body?: object
   headers?: HeadersInit | undefined
+  internal?: boolean
 }
 
 export default class AccountInternalAPIClient {
@@ -17,6 +18,9 @@ export default class AccountInternalAPIClient {
   constructor(state: State) {
     if (!env.ACCOUNT_PORTAL_URL) {
       throw new Error("Must set ACCOUNT_PORTAL_URL env var")
+    }
+    if (!env.ACCOUNT_PORTAL_API_KEY) {
+      throw new Error("Must set ACCOUNT_PORTAL_API_KEY env var")
     }
     this.host = `${env.ACCOUNT_PORTAL_URL}`
     this.state = state
@@ -39,6 +43,13 @@ export default class AccountInternalAPIClient {
         credentials: "include",
       }
 
+      if (options.internal) {
+        requestOptions.headers = {
+          ...requestOptions.headers,
+          ...{ "x-budibase-api-key": env.ACCOUNT_PORTAL_API_KEY },
+        }
+      }
+
       // @ts-ignore
       const response = await fetch(`${this.host}${url}`, requestOptions)
 
@@ -50,15 +61,21 @@ export default class AccountInternalAPIClient {
         body = await response.text()
       }
 
-      const message = `${method} ${url} - ${response.status} 
-        Response body: ${JSON.stringify(body)}
-        Request body: ${requestOptions.body}`
-
-      if (response.status > 499) {
-        console.error(message)
-      } else if (response.status >= 400) {
-        console.warn(message)
+      const data = {
+        request: requestOptions.body,
+        response: body,
       }
+      const message = `${method} ${url} - ${response.status}`
+
+      const isDebug = process.env.LOG_LEVEL === "debug"
+      if (response.status > 499) {
+        console.error(message, data)
+      } else if (response.status >= 400) {
+        console.warn(message, data)
+      } else if (isDebug) {
+        console.debug(message, data)
+      }
+
       return [response, body]
     }
 
