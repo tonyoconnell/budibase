@@ -10,6 +10,7 @@
   import { API } from "api"
   import Panel from "./Panel.svelte"
   import Tooltip from "./Tooltip.svelte"
+  import { RelationshipTypes } from "constants/backend"
 
   export let datasource
 
@@ -17,6 +18,12 @@
 
   $: tables = Object.values(datasource.entities)
   $: relationships = getRelationships(tables)
+
+  const relationshipFriendlyNames = {
+    [RelationshipTypes.ONE_TO_MANY]: "One to many",
+    [RelationshipTypes.MANY_TO_ONE]: "Many to one",
+    [RelationshipTypes.MANY_TO_MANY]: "Many to many",
+  }
 
   function getRelationships(tables) {
     const relatedColumns = []
@@ -35,6 +42,7 @@
           },
           to: { ...to },
           through: column.through,
+          relationshipType: relationshipFriendlyNames[column.relationshipType],
         })
       })
     })
@@ -45,6 +53,7 @@
         columns: `${from.name} to ${to.name}`,
         from,
         to,
+        relationshipType,
       }
     })
   }
@@ -102,7 +111,13 @@
   />
   <Table
     on:click={handleRowClick}
-    schema={{ tables: {}, columns: {} }}
+    schema={{
+      tables: {},
+      columns: {},
+      relationshipType: {
+        displayName: "Relationship",
+      },
+    }}
     data={relationships}
     allowEditColumns={false}
     allowEditRows={false}
